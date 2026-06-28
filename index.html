@@ -10,13 +10,13 @@
             --container-bg: #2d2d2d;
             --text-color: #eeeeee;
             --text-muted: #aaaaaa;
-            --accent-color: #5865F2; /* Discord/Midjourney adjacent blurple */
+            --accent-color: #5865F2;
             --border-color: #404040;
             --code-bg: #111111;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             line-height: 1.6;
@@ -98,10 +98,11 @@
         }
 
         .placeholder-text {
-            color: #555555;
+            color: #666666;
             font-size: 13px;
             text-align: center;
-            padding: 10px;
+            padding: 15px;
+            font-style: italic;
         }
 
         .image-info {
@@ -124,7 +125,7 @@
             border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 6px;
-            font-family: ui-monospace, SFMono-Regular, SF Pro Text, Menlo, Monaco, Consolas, monospace;
+            font-family: monospace;
             font-size: 11px;
             color: #ff79c6;
             word-break: break-all;
@@ -148,74 +149,52 @@
     <div class="instructions">
         <strong>How to use this for Midjourney:</strong>
         <ol>
-            <li>Upload your images into the same GitHub repository/folder where this <code>index.html</code> file lives.</li>
-            <li>Update the filenames in this HTML file to match your uploaded images.</li>
-            <li>Once pushed to GitHub Pages, right-click any image here, choose <strong>"Copy Image Link"</strong>, and paste it directly into your Midjourney prompt.</li>
+            <li>Upload your images to your GitHub repository folder.</li>
+            <li>Add their exact file names to the <code>IMAGES</code> array at the bottom of this file.</li>
+            <li>Go to your GitHub Pages site, right-click the image, and click <strong>"Copy Image Link"</strong> to paste into Midjourney.</li>
         </ol>
     </div>
 
-    <p>Your hosted images for reference prompts (<code>--sref</code>, <code>--cref</code>, or standard image prompts):</p>
+    <p>Your currently tracked images:</p>
 
-    <div class="image-grid">
-        
-        <!-- IMAGE CARD 1 -->
-        <div class="image-card">
-            <div class="image-wrapper">
-                <!-- Change 'character1.jpg' to your exact image file name -->
-                <img src="character1.jpg" alt="Character Reference 1" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <div class="placeholder-text" style="display:none;">[ image 'character1.jpg' not uploaded yet ]</div>
-            </div>
-            <div class="image-info">
-                <div class="image-name">character1.jpg</div>
-                <div class="url-box">Relative path: character1.jpg</div>
-                <div class="note">Use GitHub Pages absolute URL in Discord</div>
-            </div>
-        </div>
-
-        <!-- IMAGE CARD 2 -->
-        <div class="image-card">
-            <div class="image-wrapper">
-                <!-- Change 'style1.jpg' to your exact image file name -->
-                <img src="style1.jpg" alt="Style Reference 1" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <div class="placeholder-text" style="display:none;">[ image 'style1.jpg' not uploaded yet ]</div>
-            </div>
-            <div class="image-info">
-                <div class="image-name">style1.jpg</div>
-                <div class="url-box">Relative path: style1.jpg</div>
-                <div class="note">Use GitHub Pages absolute URL in Discord</div>
-            </div>
-        </div>
-
-        <!-- IMAGE CARD 3 -->
-        <div class="image-card">
-            <div class="image-wrapper">
-                <!-- Change 'pose1.png' to your exact image file name -->
-                <img src="pose1.png" alt="Pose Reference 1" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <div class="placeholder-text" style="display:none;">[ image 'pose1.png' not uploaded yet ]</div>
-            </div>
-            <div class="image-info">
-                <div class="image-name">pose1.png</div>
-                <div class="url-box">Relative path: pose1.png</div>
-                <div class="note">Use GitHub Pages absolute URL in Discord</div>
-            </div>
-        </div>
-
-        <!-- IMAGE CARD 4 -->
-        <div class="image-card">
-            <div class="image-wrapper">
-                <!-- Change 'background1.jpg' to your exact image file name -->
-                <img src="background1.jpg" alt="Background Reference 1" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <div class="placeholder-text" style="display:none;">[ image 'background1.jpg' not uploaded yet ]</div>
-            </div>
-            <div class="image-info">
-                <div class="image-name">background1.jpg</div>
-                <div class="url-box">Relative path: background1.jpg</div>
-                <div class="note">Use GitHub Pages absolute URL in Discord</div>
-            </div>
-        </div>
-
-    </div>
+    <div class="image-grid" id="gallery"></div>
 </div>
+
+<script>
+    // ==========================================
+    // 1. PUT ALL YOUR IMAGE FILENAMES HERE (ONLY ONCE)
+    // ==========================================
+    const IMAGES = [
+        "Hand_A.png",
+        "Hand_K_1.jpg",
+        "Hand_K_2.png"
+    ];
+
+    // ==========================================
+    // 2. AUTOMATIC POPULATION LOGIC (DON'T TOUCH)
+    // ==========================================
+    const gallery = document.getElementById('gallery');
+
+    IMAGES.forEach(filename => {
+        // Create the card container
+        const card = document.createElement('div');
+        card.className = 'image-card';
+
+        card.innerHTML = `
+            <div class="image-wrapper">
+                <img src="${filename}" alt="${filename}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="placeholder-text" style="display:none;">[ File '${filename}' not uploaded yet ]</div>
+            </div>
+            <div class="image-info">
+                <div class="image-name">${filename}</div>
+                <div class="url-box">${filename}</div>
+                <div class="note">Right-click image to copy absolute link</div>
+            </div>
+        `;
+
+        gallery.appendChild(card);
+    });
+</script>
 
 </body>
 </html>
