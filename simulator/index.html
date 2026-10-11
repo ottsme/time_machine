@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07080d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trip Sim">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="sim-version" content="v3.1 · 2026-10-11">
+<style>html,body{margin:0;background:#07080d}*,*::before,*::after{box-sizing:border-box}</style>
+</head>
+<body>
+<title>Tallinn–Tartu Trip Simulator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&family=Syne:wght@600;700&display=swap">
+<style>
+/* Layout: two columns on wide screens (phone stage | controls + readouts), stacked on phones; trip strips full width below; notes last */
+:root{--bg:#07080d;--panel:#10121b;--panel2:#161927;--line:#252a3c;--fg:#e6e8f0;--muted:#8d93a8;--accent:#9e0303;--accent-soft:#c4423f;--hold:#e0a23a;--skip:#ff5a52;--ok:#5fb98a;
+--display:'Syne','Helvetica Neue',Arial,sans-serif;--body:'IBM Plex Sans',system-ui,sans-serif;--mono:'Space Mono',ui-monospace,monospace;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1100px;margin:0 auto;padding-inline:16px;padding-block:24px 48px;display:flex;flex-direction:column;gap:24px}
+h1{font-family:var(--display);font-weight:600;font-size:28px;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:18px;margin:0;text-wrap:balance}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+p{margin:0;max-width:68ch}
+.top{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:820px){.top{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;width:100%;max-width:340px;margin:0 auto;aspect-ratio:9/20;border-radius:14px;overflow:hidden;background:#000;border:1px solid var(--line)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:12px;right:12px;font-family:var(--mono);font-size:11px;line-height:1.45;color:#d4d8e8;font-variant-numeric:tabular-nums;pointer-events:none;display:flex;justify-content:space-between;gap:8px;text-shadow:0 1px 3px #000}
+#hudTop{top:10px}
+#panel{position:absolute;left:0;right:0;bottom:0;padding:26px 12px 12px;background:linear-gradient(to top,rgba(5,6,12,.9),rgba(5,6,12,0));pointer-events:none;font-family:var(--mono);font-size:11px;color:#d4d8e8}
+#nowH{font-family:var(--body);font-size:13px;color:#fff;min-height:1.4em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:3px;background:rgba(255,255,255,.15);border-radius:2px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:#fff}
+#jbar i{background:var(--accent-soft)}
+.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+button,select,input[type=number]{font:500 14px var(--body);color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+button{cursor:pointer}
+button:hover,select:hover{border-color:var(--accent-soft)}
+button:focus-visible,input:focus-visible,select:focus-visible,canvas:focus-visible{outline:2px solid var(--accent-soft);outline-offset:2px}
+input[type=number]{width:84px;font-family:var(--mono);font-size:13px}
+input[type=range]{width:100%;accent-color:var(--accent-soft)}
+.km{display:flex;align-items:center;gap:10px}
+.km output{font-family:var(--mono);font-size:13px;min-width:90px;text-align:right;font-variant-numeric:tabular-nums}
+.params{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.params label{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.params small{font-family:var(--body);font-size:12px;text-transform:none;letter-spacing:0;color:var(--muted)}
+#perr{color:var(--skip);font-size:13px;min-height:1em}
+.read{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.read div{background:var(--panel);padding:7px 10px;display:flex;flex-direction:column;min-width:0}
+.read span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.read b{font-family:var(--mono);font-weight:400;font-size:13px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#state{font-family:var(--mono);font-size:13px;padding:8px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+.checks{display:flex;gap:6px 18px;flex-wrap:wrap}
+.checks label{display:flex;align-items:center;gap:7px;font-size:14px;cursor:pointer}
+.checks input{accent-color:var(--accent-soft);width:16px;height:16px}
+.strips{display:flex;flex-direction:column;gap:10px}
+.striphead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.stripbox{position:relative;width:100%}
+.stripbox canvas{width:100%;display:block;height:var(--h);border-radius:8px;border:1px solid var(--line);cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat span{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.stat b{font-family:var(--mono);font-weight:400;font-size:20px;font-variant-numeric:tabular-nums}
+#skiplist{font-size:13px;color:var(--muted)}
+#skiplist b{color:var(--skip);font-weight:500}
+.notes{display:flex;flex-direction:column;gap:20px;border-top:1px solid var(--line);padding-top:24px}
+.notes section{display:flex;flex-direction:column;gap:10px}
+.notes ul,.notes ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.formula{font-family:var(--mono);font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;line-height:1.7;overflow-x:auto;white-space:pre;color:#cfd3e2}
+table{border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+td,th{border-bottom:1px solid var(--line);padding:5px 12px 5px 0;text-align:left}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:400}
+.tw{overflow-x:auto}
+#err{color:var(--skip);font-size:13px}
+</style>
+
+<div class="wrap">
+<header>
+<p class="eyebrow" id="eyebrow">The Original Time Machine · trip simulator v3</p>
+<h1>Tallinn–Tartu trip simulator</h1>
+<p style="color:var(--muted);margin-top:8px">A realistic 186 km drive from Vabaduse väljak to Raekoja plats carrying every event of the chosen deck (<span id="deckname">Universe</span>), run under the playback rules in ledger §O (approved 2026-10-10): the road owns the picture, the voice may outlive it. Change the zone widths and the whole trip is recomputed.</p>
+</header>
+
+<div class="top">
+<div>
+<div class="stage" id="stage">
+<canvas id="c"></canvas>
+<canvas id="o"></canvas>
+<div class="hud" id="hudTop"><div id="hudL">0.00 km<br>0.00%</div><div id="hudR" style="text-align:right">—<br>0 km/h</div></div>
+<div id="panel">
+<div id="nowD" style="color:var(--muted)">—</div>
+<div id="nowH">—</div>
+<div class="bar" id="abar"><i></i></div>
+<div class="bar" id="jbar"><i></i></div>
+</div>
+</div>
+<p id="err"></p>
+</div>
+
+<div class="side">
+<div class="card">
+<div class="row">
+<select id="deck" aria-label="Timeline"><option value="universe">Universe</option><option value="earth">Earth &amp; Life</option></select>
+</div>
+<div class="row">
+<button id="play" style="min-width:92px">Play</button>
+<select id="rate" aria-label="Playback speed"><option value="1">1× real time</option><option value="2">2×</option><option value="5">5×</option><option value="10" selected>10×</option><option value="60">60×</option></select>
+<button id="prev" aria-label="Previous event">◀ Event</button>
+<button id="next" aria-label="Next event">Event ▶</button>
+</div>
+<div class="km"><input type="range" id="kmS" min="0" max="186" step="0.01" value="0" aria-label="Distance along the route"><output id="kmO">0.00 km</output></div>
+<div id="state">Ignition</div>
+<div class="read">
+<div><span>Elapsed</span><b id="rT">0:00:00</b></div>
+<div><span>Speed</span><b id="rV">0 km/h</b></div>
+<div><span>Road</span><b id="rSeg">Tallinn centre</b></div>
+<div><span>Next anchor</span><b id="rNext">—</b></div>
+</div>
+<div class="checks">
+<label><input type="checkbox" id="tm" checked> Time marks</label>
+<label><input type="checkbox" id="fx" checked> Formulas &amp; names</label>
+</div>
+</div>
+
+<div class="card">
+<h2>Zone widths</h2>
+<div class="params">
+<label for="pFIZ">FIZ · fade-in <input type="number" id="pFIZ" min="0" max="100" step="1" value="10"><small>% of the gap before the event</small></label>
+<label for="pEZ">EZ · full event <input type="number" id="pEZ" min="0" max="100" step="1" value="10"><small>% of the gap after</small></label>
+<label for="pFOZ">FOZ · fade-out <input type="number" id="pFOZ" min="0" max="100" step="1" value="10"><small>% of the gap after</small></label>
+<label for="pFloor">Floor <input type="number" id="pFloor" min="0" max="5" step="0.01" value="0.05"><small>% of the trip; shorter filler is dropped</small></label>
+<label for="pDiss">Catch-up fade <input type="number" id="pDiss" min="0.2" max="10" step="0.1" value="1.5"><small>seconds, when a blocked fade-in resumes</small></label>
+</div>
+<div class="checks"><label><input type="checkbox" id="pHold"> Compare: the withdrawn audio hold</label></div>
+<p style="font-size:13px;color:var(--muted)">Off is §O: the road owns the picture and the voice may carry on over the tunnel. On brings back the July rule withdrawn on 2026-10-10 (§O.8), where the narration held the picture, for comparison only. Changing anything recomputes the whole trip.</p>
+<p id="perr" role="alert"></p>
+</div>
+</div>
+</div>
+
+<section class="strips">
+<div class="striphead">
+<h2>The whole trip</h2>
+<div class="legend"><span><i style="background:#cfd6ff"></i>Event picture</span><span><i style="background:#2a3150"></i>Filler (tunnel)</span><span><i style="background:#224e56"></i>Tunnel with narration</span><span><i style="background:var(--hold)"></i>Held by audio</span><span><i style="background:var(--skip)"></i>Skipped</span><span><i style="background:#fff"></i>Anchor</span></div>
+</div>
+<div class="stripbox"><canvas id="s1" style="--h:64px" tabindex="0" aria-label="Whole trip overview. Click to jump."></canvas></div>
+<div class="striphead">
+<h2>Around you</h2>
+<select id="zoom" aria-label="Zoom"><option value="20">20 km window</option><option value="5" selected>5 km window</option><option value="1">1 km window</option></select>
+</div>
+<div class="stripbox"><canvas id="s2" style="--h:110px" tabindex="0" aria-label="Zoomed strip around the current position. Click to jump."></canvas></div>
+</section>
+
+<section class="stats" id="stats"></section>
+<p id="skiplist"></p>
+
+<section class="notes">
+<section>
+<p class="eyebrow">How to use it</p>
+<ul>
+<li><strong>Drag the distance slider</strong> to go anywhere on the road, or click either strip. <strong>Play</strong> runs the trip in time, red lights included; dragging jumps over them, because a stop has no length on the road.</li>
+<li>Judge the feel at <strong>1×</strong>. At higher speeds the narration and the catch-up fade run fast too, which is fine for finding places but not for judging fades.</li>
+<li>Change the <strong>zone widths</strong> and the whole trip is recomputed from the start: skips, blocked fade-ins and crossfades all move. The figures under the strips are for comparing settings.</li>
+<li>The corner shows distance, trip share, age and speed. The bottom panel shows the event being narrated, how far its narration has got, and the journey bar.</li>
+<li>Pictures are placeholders: the event's real heading and date on the §K.3 colour at its position. The text is deliberately low-contrast, the plate's own colour a little lighter or darker, so that like a real card it only reads once the picture is fully there.</li>
+<li><strong>Time marks</strong> come every 0.1 Ga (every 10 Ma below 100 Ma), each passing at its exact point on the road. They fly in the tunnel, so an event picture covers any that fall inside its zones.</li>
+</ul>
+</section>
+
+<section>
+<p class="eyebrow">The drive</p>
+<div class="tw"><table>
+<thead><tr><th>Stretch</th><th>km</th><th>Speed</th><th>Stops</th></tr></thead>
+<tbody id="segtab"></tbody>
+</table></div>
+<p>Accelerating at about 1.2 m/s² and braking at about 1.8 m/s². Every red light lasts 40 seconds. The trip takes <span id="ttime">—</span>, an average of <span id="tavg">—</span>. The tunnel's cruise reference is that average.</p>
+</section>
+
+<section>
+<p class="eyebrow">Rules as implemented (ledger §O)</p>
+<div class="formula">gap s = P[i+1] − P[i]
+FIZ(i+1) = fiz·s   before the next anchor   0 → 1, full exactly at the anchor
+EZ(i)    = ez·s    after the anchor         held at 1
+FOZ(i)   = foz·s   after EZ                 1 → 0, mapped to the road
+filler   = s − EZ − FOZ − FIZ               shorter than the floor: no filler,
+                                            next picture fades in over the previous
+
+voice    = (heading + space + body) / 14 chars/s, starts at its anchor   (§M.2)
+blocking = whole narration before 99%, heading only after, nothing at arrival
+
+1  blocking audio playing  → next fade-in waits
+2  blocking audio ends inside the fade-in → picture catches up over the catch-up fade
+3  blocking audio at the next anchor → that event is skipped, picture and voice
+4  after 99%: a body does not block; the next fade-in runs under it,
+   the body is cut at the anchor and the next event fires
+5  no-filler gap with a blocked fade-in → earlier picture fades out by road
+arrival  : never blocked, always fires, cuts any audio</div>
+</section>
+
+<section>
+<p class="eyebrow">Interpretations still mine, for your ruling</p>
+<ol>
+<li><strong>Narration is heading plus body only</strong>, as in §M. If the TTS also reads the spoken date first, every narration is about two seconds longer.</li>
+<li><strong>Ignition:</strong> 1.5 s of black, the first picture fades up over 3 s, narration starts at 4.5 s, and the car pulls away at 5 s.</li>
+<li><strong>No-filler gap, fade-in blocked part-way:</strong> once the earlier picture has started fading out by road, it keeps fading; it does not jump back to full when the next one resumes.</li>
+<li><strong>Colour</strong> follows §K.3 (hue 355° → 195°, 75% index / 25% distance, lightness rising) at a constant chroma. The physics chroma profile is not modelled yet. Earth &amp; Life has no ramp of its own yet, so it borrows the Universe one.</li>
+<li><strong>Earth &amp; Life formulas</strong> (decay law, half-life, uranium–lead, potassium–argon, photosynthesis, respiration, iron rusting out of the sea, chalk, acid sea, the carbon fingerprint, DNA pairs) are a first set for your editorial pass (§K.8). <strong>Names float too</strong> (Earth &amp; Life): eons, eras, periods, epochs, glaciations, continents and oceans, and species in italics, without explanations. A name floats only while it is true at your position on the road; formulas float anywhere.</li>
+</ol>
+</section>
+</section>
+</div>
+
+<script>
+const DECKS={
+ universe:{name:'Universe ENG',span:13.799e9,events:[{"h": "The Big Bang.", "d": "13.799 Ga (bln years ago)", "t": "A", "p": 0.0, "nh": 13, "n": 913}, {"h": "The first stars.", "d": "13.615 Ga", "t": "A", "p": 0.0133343, "nh": 16, "n": 522}, {"h": "The oldest galaxy we can see.", "d": "13.5 Ga", "t": "S", "p": 0.021668237, "nh": 29, "n": 577}, {"h": "The Methuselah star.", "d": "13.25 Ga", "t": "O", "p": 0.039785492, "nh": 20, "n": 711}, {"h": "The first quasar.", "d": "13.1 Ga", "t": "S", "p": 0.050655845, "nh": 17, "n": 405}, {"h": "The oldest death we've seen.", "d": "13 Ga", "t": "O", "p": 0.057902747, "nh": 28, "n": 433}, {"h": "The most distant star.", "d": "12.9 Ga", "t": "O", "p": 0.065149649, "nh": 22, "n": 435}, {"h": "The fog clears.", "d": "12.8 Ga", "t": "A", "p": 0.07239655, "nh": 15, "n": 615}, {"h": "The Methuselah planet.", "d": "12.5 Ga", "t": "O", "p": 0.094137256, "nh": 22, "n": 587}, {"h": "The Milky Way takes shape.", "d": "12.3 Ga", "t": "A", "p": 0.10863106, "nh": 26, "n": 501}, {"h": "The Milky Way eats its neighbours.", "d": "12 Ga", "t": "S", "p": 0.130371766, "nh": 34, "n": 524}, {"h": "The first big meal.", "d": "11.5 Ga", "t": "S", "p": 0.166606276, "nh": 19, "n": 631}, {"h": "Kapteyn's Star.", "d": "11.3 Ga", "t": "O", "p": 0.18110008, "nh": 15, "n": 589}, {"h": "Omega Centauri.", "d": "11.1 Ga", "t": "S", "p": 0.195593884, "nh": 15, "n": 787}, {"h": "Peak star-building.", "d": "10.9 Ga", "t": "S", "p": 0.210087688, "nh": 19, "n": 566}, {"h": "Gliese 581.", "d": "10.7 Ga", "t": "O", "p": 0.224581491, "nh": 11, "n": 706}, {"h": "A brilliant death.", "d": "10.5 Ga", "t": "O", "p": 0.239075295, "nh": 18, "n": 756}, {"h": "The Milky Way's last great collision.", "d": "10 Ga", "t": "S", "p": 0.275309805, "nh": 37, "n": 581}, {"h": "Andromeda.", "d": "9.8 Ga", "t": "S", "p": 0.289803609, "nh": 10, "n": 641}, {"h": "The disk begins.", "d": "9.5 Ga", "t": "S", "p": 0.311544315, "nh": 16, "n": 642}, {"h": "A star called Icarus.", "d": "9.34 Ga", "t": "O", "p": 0.323139358, "nh": 21, "n": 709}, {"h": "Dark energy shows its hand.", "d": "9 Ga", "t": "A", "p": 0.347778825, "nh": 27, "n": 1156}, {"h": "Kepler-11.", "d": "8.5 Ga", "t": "S", "p": 0.384013334, "nh": 10, "n": 619}, {"h": "The Milky Way grows a bar.", "d": "8 Ga", "t": "O", "p": 0.420247844, "nh": 26, "n": 490}, {"h": "TRAPPIST-1.", "d": "7.8 Ga", "t": "O", "p": 0.434741648, "nh": 11, "n": 687}, {"h": "A flash across the void.", "d": "7.5 Ga", "t": "O", "p": 0.456482354, "nh": 24, "n": 655}, {"h": "Arcturus.", "d": "7.3 Ga", "t": "O", "p": 0.470976158, "nh": 9, "n": 439}, {"h": "The Christmas Burst.", "d": "7 Ga", "t": "O", "p": 0.492716864, "nh": 20, "n": 588}, {"h": "51 Pegasi.", "d": "6.5 Ga", "t": "S", "p": 0.528951373, "nh": 10, "n": 601}, {"h": "Aldebaran.", "d": "6.35 Ga", "t": "O", "p": 0.539821726, "nh": 10, "n": 469}, {"h": "61 Cygni.", "d": "6.2 Ga", "t": "O", "p": 0.550692079, "nh": 9, "n": 598}, {"h": "A slow plunge begins.", "d": "6.05 Ga", "t": "O", "p": 0.561562432, "nh": 21, "n": 587}, {"h": "The expansion wins.", "d": "5.9 Ga", "t": "A", "p": 0.572432785, "nh": 19, "n": 950}, {"h": "Tau Ceti.", "d": "5.7 Ga", "t": "O", "p": 0.586926589, "nh": 9, "n": 659}, {"h": "Alpha Centauri.", "d": "5.5 Ga", "t": "S", "p": 0.601420393, "nh": 15, "n": 932}, {"h": "Cosmic dust.", "d": "5 Ga", "t": "O", "p": 0.637654903, "nh": 12, "n": 1289}, {"h": "The spark.", "d": "4.6 Ga", "t": "O", "p": 0.66664251, "nh": 10, "n": 49}, {"h": "The Sun, the Earth and the Moon.", "d": "4.567 Ga", "t": "A", "p": 0.669033988, "nh": 32, "n": 2556}, {"h": "The great bombardment.", "d": "4.1 Ga", "t": "S", "p": 0.70287702, "nh": 22, "n": 859}, {"h": "Oceans.", "d": "3.9 Ga", "t": "A", "p": 0.717370824, "nh": 7, "n": 1284}, {"h": "Life.", "d": "3.6 Ga", "t": "A", "p": 0.73911153, "nh": 5, "n": 1488}, {"h": "A world-ending rock.", "d": "3.26 Ga", "t": "S", "p": 0.763750996, "nh": 20, "n": 698}, {"h": "Life learns to breathe out.", "d": "3 Ga", "t": "A", "p": 0.782592942, "nh": 27, "n": 1122}, {"h": "Dry land.", "d": "2.7 Ga", "t": "S", "p": 0.804333647, "nh": 9, "n": 1044}, {"h": "The great poisoning.", "d": "2.4 Ga", "t": "A", "p": 0.826074353, "nh": 20, "n": 893}, {"h": "Oxygen overshoots.", "d": "2.15 Ga", "t": "O", "p": 0.844191608, "nh": 18, "n": 554}, {"h": "The Vredefort impact.", "d": "2 Ga", "t": "O", "p": 0.855061961, "nh": 21, "n": 496}, {"h": "The Boring Billion.", "d": "1.85 Ga", "t": "S", "p": 0.865932314, "nh": 19, "n": 565}, {"h": "The eukaryotes are here.", "d": "1.65 Ga", "t": "S", "p": 0.880426118, "nh": 24, "n": 833}, {"h": "Reefs of slime.", "d": "1.45 Ga", "t": "O", "p": 0.894919922, "nh": 15, "n": 598}, {"h": "A ripple in space itself.", "d": "1.3 Ga", "t": "S", "p": 0.905790275, "nh": 25, "n": 1088}, {"h": "The first animals.", "d": "1 Ga", "t": "A", "p": 0.927530981, "nh": 18, "n": 546}, {"h": "Snowball Earth.", "d": "720 Ma", "t": "S", "p": 0.947822306, "nh": 15, "n": 554}, {"h": "Strange first life.", "d": "575 Ma", "t": "S", "p": 0.958330314, "nh": 19, "n": 251}, {"h": "Cambrian explosion.", "d": "538.8 Ma", "t": "A", "p": 0.960953692, "nh": 19, "n": 736}, {"h": "Life comes ashore.", "d": "450 Ma", "t": "A", "p": 0.967388941, "nh": 18, "n": 852}, {"h": "Trees.", "d": "380 Ma", "t": "S", "p": 0.972461773, "nh": 6, "n": 690}, {"h": "The coal forests.", "d": "310 Ma", "t": "S", "p": 0.977534604, "nh": 17, "n": 816}, {"h": "The Great Dying.", "d": "252 Ma", "t": "A", "p": 0.981737807, "nh": 16, "n": 511}, {"h": "The first mammals.", "d": "210 Ma", "t": "S", "p": 0.984781506, "nh": 18, "n": 605}, {"h": "The age of dinosaurs.", "d": "144.1 Ma", "t": "A", "p": 0.989557214, "nh": 21, "n": 795}, {"h": "Tyrannosaurus rex.", "d": "68 Ma", "t": "O", "p": 0.995072107, "nh": 18, "n": 44}, {"h": "The dinosaurs end.", "d": "66 Ma", "t": "A", "p": 0.995217045, "nh": 18, "n": 282}, {"h": "Polaris.", "d": "50 Ma", "t": "O", "p": 0.996376549, "nh": 8, "n": 442}, {"h": "Modern Earth.", "d": "23 Ma", "t": "S", "p": 0.998333213, "nh": 13, "n": 263}, {"h": "The young giants of Orion.", "d": "8 Ma", "t": "O", "p": 0.999420248, "nh": 26, "n": 86}, {"h": "Apes stand up.", "d": "4.1 Ma", "t": "S", "p": 0.999702877, "nh": 14, "n": 14}, {"h": "The first tools.", "d": "3.3 Ma", "t": "S", "p": 0.999760852, "nh": 16, "n": 16}, {"h": "The ice ages begin.", "d": "2.6 Ma", "t": "S", "p": 0.999811581, "nh": 19, "n": 19}, {"h": "Taming of fire.", "d": "1.5 Ma", "t": "S", "p": 0.999891296, "nh": 15, "n": 15}, {"h": "Humans.", "d": "315 ka", "t": "A", "p": 0.999977172, "nh": 7, "n": 7}, {"h": "We have arrived. Today.", "d": "Today", "t": "A", "p": 1.0, "nh": 23, "n": 70}],formulas:['E = mc²','H₀ ≈ 70 km/s/Mpc','v = H₀d','λ = h / p','F = Gm₁m₂ / r²','T ≈ 2.7 K','ρc = 3H² / 8πG','ds² = −c²dt² + dx²','Gμν + Λgμν = 8πG Tμν / c⁴','z = Δλ / λ','L = 4πR²σT⁴'],texts:'texts of 2026-10-10'},
+ earth:{name:'Earth & Life ENG',span:4.543e9,events:[{"h": "Earth forms. Hadean.", "d": "4.543 Ga (bln years ago)", "t": "A", "p": 0.0, "nh": 20, "n": 486}, {"h": "We have the Moon.", "d": "4.5 Ga", "t": "A", "p": 0.009465111, "nh": 17, "n": 1010}, {"h": "The Moon's highlands.", "d": "~4.43 Ga", "t": "O", "p": 0.024873432, "nh": 21, "n": 270}, {"h": "The oldest crystal.", "d": "4.404 Ga", "t": "S", "p": 0.030596522, "nh": 19, "n": 866}, {"h": "The bombardment.", "d": "~4.25 Ga", "t": "O", "p": 0.064494827, "nh": 16, "n": 932}, {"h": "The Archean.", "d": "4.031 Ga", "t": "S", "p": 0.112700858, "nh": 12, "n": 752}, {"h": "Life.", "d": "~3.9 Ga", "t": "A", "p": 0.14153643, "nh": 5, "n": 961}, {"h": "A fingerprint of life.", "d": "~3.7 Ga", "t": "S", "p": 0.185560203, "nh": 22, "n": 808}, {"h": "The oldest fossils.", "d": "3.48 Ga", "t": "S", "p": 0.233986353, "nh": 19, "n": 714}, {"h": "The magnetic field.", "d": "~3.35 Ga", "t": "O", "p": 0.262601805, "nh": 19, "n": 603}, {"h": "Barberton.", "d": "3.26 Ga", "t": "O", "p": 0.282412503, "nh": 10, "n": 605}, {"h": "The plates start moving.", "d": "~3.2 Ga", "t": "S", "p": 0.295619635, "nh": 24, "n": 835}, {"h": "Oxygen-making photosynthesis.", "d": "~3.0 Ga", "t": "A", "p": 0.339643407, "nh": 29, "n": 840}, {"h": "The first ice.", "d": "~2.9 Ga", "t": "O", "p": 0.361655294, "nh": 14, "n": 471}, {"h": "The faint young Sun.", "d": "~2.8 Ga", "t": "O", "p": 0.38366718, "nh": 20, "n": 611}, {"h": "Continents grow.", "d": "~2.7 Ga", "t": "O", "p": 0.405679067, "nh": 16, "n": 765}, {"h": "The Proterozoic.", "d": "2.5 Ga", "t": "S", "p": 0.44970284, "nh": 16, "n": 602}, {"h": "The Great Oxidation.", "d": "~2.43 Ga", "t": "A", "p": 0.46511116, "nh": 20, "n": 1036}, {"h": "Oxygen overshoots.", "d": "~2.2 Ga", "t": "O", "p": 0.515738499, "nh": 18, "n": 562}, {"h": "The Gabon puzzle.", "d": "~2.14 Ga", "t": "O", "p": 0.528945631, "nh": 17, "n": 592}, {"h": "Vredefort.", "d": "2.023 Ga", "t": "O", "p": 0.554699538, "nh": 10, "n": 554}, {"h": "Columbia.", "d": "~1.9 Ga", "t": "S", "p": 0.581774158, "nh": 9, "n": 524}, {"h": "Sudbury.", "d": "1.849 Ga", "t": "O", "p": 0.59300022, "nh": 8, "n": 451}, {"h": "The Boring Billion.", "d": "~1.8 Ga", "t": "O", "p": 0.603786044, "nh": 19, "n": 602}, {"h": "Eukaryotes.", "d": "~1.65 Ga", "t": "A", "p": 0.636803874, "nh": 11, "n": 836}, {"h": "The chloroplast.", "d": "~1.5 Ga", "t": "S", "p": 0.669821704, "nh": 16, "n": 491}, {"h": "An eighteen-hour day.", "d": "~1.4 Ga", "t": "S", "p": 0.69183359, "nh": 21, "n": 764}, {"h": "Rise of the stromatolites.", "d": "~1.25 Ga", "t": "O", "p": 0.72485142, "nh": 26, "n": 593}, {"h": "Sex.", "d": "1.047 Ga", "t": "A", "p": 0.769535549, "nh": 4, "n": 745}, {"h": "The first animals.", "d": "~890 Ma", "t": "A", "p": 0.804094211, "nh": 18, "n": 899}, {"h": "Snowball Earth.", "d": "717 Ma", "t": "A", "p": 0.842174774, "nh": 15, "n": 736}, {"h": "The Ediacarans.", "d": "575 Ma", "t": "S", "p": 0.873431653, "nh": 15, "n": 317}, {"h": "The Cambrian explosion.", "d": "538.8 Ma", "t": "A", "p": 0.881399956, "nh": 23, "n": 678}, {"h": "The Ordovician.", "d": "485.4 Ma", "t": "S", "p": 0.893154303, "nh": 15, "n": 301}, {"h": "Life comes ashore.", "d": "~455 Ma", "t": "A", "p": 0.899845917, "nh": 18, "n": 699}, {"h": "The age of fishes.", "d": "~400 Ma", "t": "S", "p": 0.911952454, "nh": 18, "n": 297}, {"h": "Fish walk.", "d": "~375 Ma", "t": "A", "p": 0.917455426, "nh": 10, "n": 851}, {"h": "Coal and giant insects.", "d": "~325 Ma", "t": "S", "p": 0.928461369, "nh": 23, "n": 385}, {"h": "Pangaea.", "d": "~298 Ma", "t": "S", "p": 0.934404578, "nh": 8, "n": 764}, {"h": "The Great Dying.", "d": "251.902 Ma", "t": "A", "p": 0.944551618, "nh": 16, "n": 430}, {"h": "Dinosaurs appear.", "d": "~224 Ma", "t": "S", "p": 0.950693374, "nh": 17, "n": 546}, {"h": "The Jurassic.", "d": "~194 Ma", "t": "S", "p": 0.95729694, "nh": 13, "n": 779}, {"h": "Juramaia.", "d": "~160 Ma", "t": "O", "p": 0.964780982, "nh": 9, "n": 582}, {"h": "Flowers.", "d": "~130 Ma", "t": "S", "p": 0.971384548, "nh": 8, "n": 652}, {"h": "The titanosaurs.", "d": "~100 Ma", "t": "O", "p": 0.977988114, "nh": 16, "n": 540}, {"h": "The chalk.", "d": "~85 Ma", "t": "O", "p": 0.981289897, "nh": 10, "n": 565}, {"h": "The end of the dinosaurs.", "d": "66.0 Ma", "t": "A", "p": 0.985472155, "nh": 25, "n": 366}, {"h": "The hothouse.", "d": "~56 Ma", "t": "S", "p": 0.987673344, "nh": 13, "n": 940}, {"h": "Antarctica freezes.", "d": "~34 Ma", "t": "S", "p": 0.992515959, "nh": 19, "n": 516}, {"h": "The Neogene.", "d": "23.04 Ma", "t": "S", "p": 0.994928461, "nh": 12, "n": 680}, {"h": "Our branch splits off.", "d": "~7 Ma", "t": "O", "p": 0.998459168, "nh": 22, "n": 168}, {"h": "The first stone tools.", "d": "3.3 Ma", "t": "S", "p": 0.999273608, "nh": 22, "n": 22}, {"h": "The ice ages begin.", "d": "2.58 Ma", "t": "S", "p": 0.999432093, "nh": 19, "n": 90}, {"h": "Taming of fire.", "d": "~1.0 Ma", "t": "O", "p": 0.999779881, "nh": 15, "n": 15}, {"h": "Humans.", "d": "300 ka", "t": "A", "p": 0.999933964, "nh": 7, "n": 7}, {"h": "We have arrived. Today.", "d": "Today", "t": "A", "p": 1.0, "nh": 23, "n": 70}],formulas:['N = N₀e^(−λt)','t½ = ln 2 / λ','²³⁸U → ²⁰⁶Pb · t½ 4.47 Ga','⁴⁰K → ⁴⁰Ar','6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂','C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O','4Fe²⁺ + O₂ + 10H₂O → 4Fe(OH)₃ + 8H⁺','Ca²⁺ + 2HCO₃⁻ → CaCO₃ + CO₂ + H₂O','CO₂ + H₂O ⇌ H₂CO₃','δ¹³C','A–T · G–C'],texts:'texts locked 2026-10-11',names:[{"t": "Hadean", "a": 4543000000.0, "b": 4031000000.0, "k": "n"}, {"t": "Archean", "a": 4031000000.0, "b": 2500000000.0, "k": "n"}, {"t": "Proterozoic", "a": 2500000000.0, "b": 538800000.0, "k": "n"}, {"t": "Phanerozoic", "a": 538800000.0, "b": 0.0, "k": "n"}, {"t": "Eoarchean", "a": 4031000000.0, "b": 3600000000.0, "k": "n"}, {"t": "Paleoarchean", "a": 3600000000.0, "b": 3200000000.0, "k": "n"}, {"t": "Mesoarchean", "a": 3200000000.0, "b": 2800000000.0, "k": "n"}, {"t": "Neoarchean", "a": 2800000000.0, "b": 2500000000.0, "k": "n"}, {"t": "Paleoproterozoic", "a": 2500000000.0, "b": 1600000000.0, "k": "n"}, {"t": "Mesoproterozoic", "a": 1600000000.0, "b": 1000000000.0, "k": "n"}, {"t": "Neoproterozoic", "a": 1000000000.0, "b": 538800000.0, "k": "n"}, {"t": "Paleozoic", "a": 538800000.0, "b": 251902000.0, "k": "n"}, {"t": "Mesozoic", "a": 251902000.0, "b": 66000000.0, "k": "n"}, {"t": "Cenozoic", "a": 66000000.0, "b": 0.0, "k": "n"}, {"t": "Siderian", "a": 2500000000.0, "b": 2300000000.0, "k": "n"}, {"t": "Rhyacian", "a": 2300000000.0, "b": 2050000000.0, "k": "n"}, {"t": "Orosirian", "a": 2050000000.0, "b": 1800000000.0, "k": "n"}, {"t": "Statherian", "a": 1800000000.0, "b": 1600000000.0, "k": "n"}, {"t": "Calymmian", "a": 1600000000.0, "b": 1400000000.0, "k": "n"}, {"t": "Ectasian", "a": 1400000000.0, "b": 1200000000.0, "k": "n"}, {"t": "Stenian", "a": 1200000000.0, "b": 1000000000.0, "k": "n"}, {"t": "Tonian", "a": 1000000000.0, "b": 720000000.0, "k": "n"}, {"t": "Cryogenian", "a": 720000000.0, "b": 635000000.0, "k": "n"}, {"t": "Ediacaran", "a": 635000000.0, "b": 538800000.0, "k": "n"}, {"t": "Cambrian", "a": 538800000.0, "b": 485400000.0, "k": "n"}, {"t": "Ordovician", "a": 485400000.0, "b": 443100000.0, "k": "n"}, {"t": "Silurian", "a": 443100000.0, "b": 419620000.0, "k": "n"}, {"t": "Devonian", "a": 419620000.0, "b": 358860000.0, "k": "n"}, {"t": "Carboniferous", "a": 358860000.0, "b": 298900000.0, "k": "n"}, {"t": "Permian", "a": 298900000.0, "b": 251902000.0, "k": "n"}, {"t": "Triassic", "a": 251902000.0, "b": 201400000.0, "k": "n"}, {"t": "Jurassic", "a": 201400000.0, "b": 145000000.0, "k": "n"}, {"t": "Cretaceous", "a": 145000000.0, "b": 66000000.0, "k": "n"}, {"t": "Paleogene", "a": 66000000.0, "b": 23040000.0, "k": "n"}, {"t": "Neogene", "a": 23040000.0, "b": 2580000.0, "k": "n"}, {"t": "Quaternary", "a": 2580000.0, "b": 0.0, "k": "n"}, {"t": "Paleocene", "a": 66000000.0, "b": 56000000.0, "k": "n"}, {"t": "Eocene", "a": 56000000.0, "b": 33900000.0, "k": "n"}, {"t": "Oligocene", "a": 33900000.0, "b": 23040000.0, "k": "n"}, {"t": "Miocene", "a": 23040000.0, "b": 5333000.0, "k": "n"}, {"t": "Pliocene", "a": 5333000.0, "b": 2580000.0, "k": "n"}, {"t": "Pleistocene", "a": 2580000.0, "b": 11700.0, "k": "n"}, {"t": "Holocene", "a": 11700.0, "b": 0.0, "k": "n"}, {"t": "Huronian", "a": 2430000000.0, "b": 2220000000.0, "k": "n"}, {"t": "Sturtian", "a": 717000000.0, "b": 660000000.0, "k": "n"}, {"t": "Marinoan", "a": 650000000.0, "b": 635000000.0, "k": "n"}, {"t": "Columbia", "a": 1800000000.0, "b": 1350000000.0, "k": "n"}, {"t": "Rodinia", "a": 1100000000.0, "b": 750000000.0, "k": "n"}, {"t": "Iapetus", "a": 600000000.0, "b": 420000000.0, "k": "n"}, {"t": "Gondwana", "a": 550000000.0, "b": 180000000.0, "k": "n"}, {"t": "Pangaea", "a": 335000000.0, "b": 175000000.0, "k": "n"}, {"t": "Panthalassa", "a": 335000000.0, "b": 175000000.0, "k": "n"}, {"t": "Tethys", "a": 250000000.0, "b": 25000000.0, "k": "n"}, {"t": "Laurasia", "a": 200000000.0, "b": 55000000.0, "k": "n"}, {"t": "Grypania spiralis", "a": 1874000000.0, "b": 1400000000.0, "k": "s"}, {"t": "Tappania plana", "a": 1630000000.0, "b": 1400000000.0, "k": "s"}, {"t": "Bangiomorpha pubescens", "a": 1060000000.0, "b": 1030000000.0, "k": "s"}, {"t": "Charnia masoni", "a": 575000000.0, "b": 550000000.0, "k": "s"}, {"t": "Fractofusus misrai", "a": 570000000.0, "b": 560000000.0, "k": "s"}, {"t": "Dickinsonia costata", "a": 560000000.0, "b": 550000000.0, "k": "s"}, {"t": "Kimberella quadrata", "a": 560000000.0, "b": 550000000.0, "k": "s"}, {"t": "Tribrachidium heraldicum", "a": 558000000.0, "b": 550000000.0, "k": "s"}, {"t": "Cloudina", "a": 550000000.0, "b": 539000000.0, "k": "s"}, {"t": "Haikouichthys ercaicunensis", "a": 520000000.0, "b": 516000000.0, "k": "s"}, {"t": "Anomalocaris canadensis", "a": 510000000.0, "b": 505000000.0, "k": "s"}, {"t": "Hallucigenia sparsa", "a": 510000000.0, "b": 505000000.0, "k": "s"}, {"t": "Opabinia regalis", "a": 510000000.0, "b": 505000000.0, "k": "s"}, {"t": "Pikaia gracilens", "a": 510000000.0, "b": 505000000.0, "k": "s"}, {"t": "Cameroceras", "a": 470000000.0, "b": 443000000.0, "k": "s"}, {"t": "Isotelus rex", "a": 455000000.0, "b": 450000000.0, "k": "s"}, {"t": "Cooksonia", "a": 433000000.0, "b": 393000000.0, "k": "s"}, {"t": "Eurypterus remipes", "a": 423000000.0, "b": 419000000.0, "k": "s"}, {"t": "Archaeopteris", "a": 385000000.0, "b": 359000000.0, "k": "s"}, {"t": "Tiktaalik roseae", "a": 377000000.0, "b": 373000000.0, "k": "s"}, {"t": "Dunkleosteus terrelli", "a": 372000000.0, "b": 359000000.0, "k": "s"}, {"t": "Acanthostega gunnari", "a": 367000000.0, "b": 363000000.0, "k": "s"}, {"t": "Lepidodendron", "a": 359000000.0, "b": 299000000.0, "k": "s"}, {"t": "Arthropleura", "a": 345000000.0, "b": 290000000.0, "k": "s"}, {"t": "Hylonomus lyelli", "a": 314000000.0, "b": 310000000.0, "k": "s"}, {"t": "Meganeura monyi", "a": 305000000.0, "b": 299000000.0, "k": "s"}, {"t": "Dimetrodon", "a": 295000000.0, "b": 272000000.0, "k": "s"}, {"t": "Glossopteris", "a": 298000000.0, "b": 252000000.0, "k": "s"}, {"t": "Lystrosaurus", "a": 254000000.0, "b": 248000000.0, "k": "s"}, {"t": "Eoraptor lunensis", "a": 232000000.0, "b": 230000000.0, "k": "s"}, {"t": "Coelophysis bauri", "a": 216000000.0, "b": 203000000.0, "k": "s"}, {"t": "Plateosaurus", "a": 214000000.0, "b": 204000000.0, "k": "s"}, {"t": "Juramaia sinensis", "a": 161000000.0, "b": 159000000.0, "k": "s"}, {"t": "Brachiosaurus altithorax", "a": 155000000.0, "b": 150000000.0, "k": "s"}, {"t": "Stegosaurus", "a": 155000000.0, "b": 145000000.0, "k": "s"}, {"t": "Allosaurus fragilis", "a": 155000000.0, "b": 145000000.0, "k": "s"}, {"t": "Archaeopteryx lithographica", "a": 151000000.0, "b": 148000000.0, "k": "s"}, {"t": "Archaefructus", "a": 126000000.0, "b": 122000000.0, "k": "s"}, {"t": "Patagotitan mayorum", "a": 102000000.0, "b": 95000000.0, "k": "s"}, {"t": "Argentinosaurus huinculensis", "a": 96000000.0, "b": 92000000.0, "k": "s"}, {"t": "Velociraptor mongoliensis", "a": 75000000.0, "b": 71000000.0, "k": "s"}, {"t": "Tyrannosaurus rex", "a": 68000000.0, "b": 66000000.0, "k": "s"}, {"t": "Triceratops horridus", "a": 68000000.0, "b": 66000000.0, "k": "s"}, {"t": "Quetzalcoatlus northropi", "a": 68000000.0, "b": 66000000.0, "k": "s"}, {"t": "Gastornis", "a": 56000000.0, "b": 45000000.0, "k": "s"}, {"t": "Pakicetus", "a": 50000000.0, "b": 48000000.0, "k": "s"}, {"t": "Basilosaurus", "a": 41000000.0, "b": 34000000.0, "k": "s"}, {"t": "Paraceratherium", "a": 34000000.0, "b": 23000000.0, "k": "s"}, {"t": "Otodus megalodon", "a": 23000000.0, "b": 3600000.0, "k": "s"}, {"t": "Sahelanthropus tchadensis", "a": 7200000.0, "b": 6800000.0, "k": "s"}, {"t": "Australopithecus afarensis", "a": 3900000.0, "b": 2900000.0, "k": "s"}, {"t": "Smilodon", "a": 2500000.0, "b": 10000.0, "k": "s"}, {"t": "Homo habilis", "a": 2400000.0, "b": 1400000.0, "k": "s"}, {"t": "Homo erectus", "a": 1900000.0, "b": 110000.0, "k": "s"}, {"t": "Mammuthus primigenius", "a": 400000.0, "b": 4000.0, "k": "s"}, {"t": "Homo sapiens", "a": 300000.0, "b": 0.0, "k": "s"}]}};
+let DECK='universe',EV,N,SPAN,FORMULAS,NAMES=[],lastTexts=[];
+// floaters: formulas float anywhere; a name floats only while it is true (age inside its range). Names weigh 2, formulas 1; no repeat of the last 4.
+function pickFloater(age){const c=[];for(const f of FORMULAS)c.push([f,'f',1]);for(const x of NAMES)if(age<=x.a&&age>=x.b)c.push([x.t,x.k,2]);
+ let pool=c.filter(x=>!lastTexts.includes(x[0]));if(!pool.length)pool=c;let s=pool.reduce((a,x)=>a+x[2],0)*Math.random();
+ for(const x of pool){s-=x[2];if(s<=0){lastTexts.push(x[0]);if(lastTexts.length>4)lastTexts.shift();return x;}}return pool[pool.length-1];}
+const L=186, SL=0.99, CPS=14, DT=0.25;
+const $=id=>document.getElementById(id);
+
+/* ------------- the drive ------------- */
+const SEGS=[
+ [0,6,40,'Tallinn centre'],[6,12,70,'Leaving Tallinn'],[12,40,110,'Highway, 2+2'],[40,62,90,'Highway, 2 lanes'],
+ [62,100,110,'Highway, 2+2'],[100,140,90,'Highway, 2 lanes'],[140,178,100,'Highway'],
+ [178,184.5,40,'Tartu streets'],[184.5,186,15,'Address hunting']];
+const STOPS=[1.5,3.2,5.0,180.6,183.2];
+const STOP_S=40, ACC=1.2, BRK=1.8, IGN=5;
+function segAt(km){for(const s of SEGS)if(km<s[1])return s;return SEGS[SEGS.length-1];}
+
+/* ------------- colour: §K.3 ramp in OKLCH, gamut-mapped ------------- */
+function oklch(Lc,C,h){
+ for(let k=0;k<30;k++){
+  const a=C*Math.cos(h*Math.PI/180),b=C*Math.sin(h*Math.PI/180);
+  const l_=Lc+.3963377774*a+.2158037573*b,m_=Lc-.1055613458*a-.0638541728*b,s_=Lc-.0894841775*a-1.2914855480*b;
+  const l=l_**3,m=m_**3,s=s_**3;
+  const lin=[4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.7076147010*s];
+  if(lin.every(v=>v>=-1e-4&&v<=1.0001))return lin.map(v=>{v=Math.max(0,Math.min(1,v));return v<=.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-.055;});
+  C*=.85;}
+ return [Lc,Lc,Lc];}
+function idxFrac(p){let g=0;while(g<N-2&&EV[g+1].p<=p)g++;const s=EV[g+1].p-EV[g].p;return (g+(s>0?Math.min(1,(p-EV[g].p)/s):0))/(N-1);}
+function rampW(p){return .75*idxFrac(p)+.25*p;}
+function rampHue(p){return 355-160*rampW(p);}
+let plateCol=[],plateTxt=[];
+function buildPlates(){plateCol=EV.map(e=>{const w=rampW(e.p);return oklch(.14+.2*w,.11,355-160*w);});
+// low-contrast text: the plate's own colour, slightly lighter on even events, slightly darker on odd ones
+plateTxt=EV.map((e,i)=>{const w=rampW(e.p);return oklch(.14+.2*w+(i%2?-.05:.1),.11,355-160*w);});}
+const css=c=>`rgb(${c.map(v=>Math.round(v*255)).join(',')})`;
+
+/* ------------- simulation ------------- */
+let SIM=null;
+function simulate(prm){
+ const P=EV.map(e=>e.p);
+ const EZ=new Float64Array(N),FOZ=new Float64Array(N),FIZ=new Float64Array(N),CF=new Uint8Array(N);
+ for(let i=0;i<N-1;i++){const s=P[i+1]-P[i];
+  EZ[i]=prm.ez*s;FOZ[i]=prm.foz*s;FIZ[i+1]=prm.fiz*s;
+  const flz=s-EZ[i]-FOZ[i]-FIZ[i+1];
+  if(flz*100<prm.floor){CF[i]=1;FOZ[i]=s-EZ[i];FIZ[i+1]=s-EZ[i];}}
+ const cap=Math.ceil(10000/DT);
+ const T=new Float32Array(cap),KM=new Float64Array(cap),V=new Float32Array(cap);
+ const LI=[new Int16Array(cap).fill(-1),new Int16Array(cap).fill(-1),new Int16Array(cap).fill(-1)];
+ const LO=[new Float32Array(cap),new Float32Array(cap),new Float32Array(cap)];
+ const LK=[new Uint8Array(cap),new Uint8Array(cap),new Uint8Array(cap)]; // 0 normal 1 held 2 dissolving 3 crossfade-under
+ const AI=new Int16Array(cap).fill(-1),AF=new Float32Array(cap);
+ const fired=new Uint8Array(N),skipped=new Uint8Array(N),cutAt=new Float32Array(N).fill(-1),blockedIn=new Uint8Array(N),catchT=new Float32Array(N).fill(-1);
+ const log=[];
+ let t=0,km=0,v=0,served=0,wait=0,audio=null,hold=null,diss=[],arrT=-1,arrStart=0,arrFired=-1,prevArrOp=0,n=0,prevP=-1;
+ const fire=(i,tt)=>{fired[i]=1;audio={i,t0:tt,th:tt+EV[i].nh/CPS,te:tt+EV[i].n/CPS};log.push({i,t:tt,km});};
+ const release=(i,tt)=>{diss.push({i,t0:tt});};
+ while(n<cap){
+  /* car */
+  if(t>=IGN&&km<L){
+   if(wait>0){wait-=DT;v=0;}
+   else{
+    let target=segAt(km)[2]/3.6;
+    const cons=[];
+    for(const s of SEGS)if(s[0]>km&&s[0]-km<1.5)cons.push([s[0],s[2]/3.6]);
+    if(served<STOPS.length)cons.push([STOPS[served],0]);
+    cons.push([L,0]);
+    for(const [x,vv] of cons){const d=(x-km)*1000;if(d<1.5e3)target=Math.min(target,Math.sqrt(Math.max(0,vv*vv+2*BRK*Math.max(0,d-2))));}
+    if(v<target)v=Math.min(target,v+ACC*DT);else v=Math.max(target,v-BRK*1.6*DT);
+    km=Math.min(L,km+v*DT/1000);
+    if(served<STOPS.length&&STOPS[served]-km<0.003&&v<1){km=Math.max(km,STOPS[served]-0.003);v=0;wait=STOP_S;served++;}
+    if(L-km<0.002&&v<1){km=L;v=0;}
+   }}
+  const p=km/L;
+  /* ignition */
+  if(n===0)fire(0,4.5);
+  const lay=[];
+  if(!prm.holdPic){
+  /* ===== §O (2026-10-10): the road owns the picture, the voice may outlive it ===== */
+   // anchors: skip if blocking audio still plays; after the SL a body is cut instead
+   for(let i=1;i<N;i++){
+    if(prevP<P[i]&&p>=P[i]&&!fired[i]&&!skipped[i]){
+     if(i===N-1){if(audio){cutAt[audio.i]=t;audio=null;}fire(i,t);arrFired=t;}
+     else if(audio&&t<audio.te){
+      if(p>=SL&&t>=audio.th){cutAt[audio.i]=t;audio=null;fire(i,t);}
+      else{skipped[i]=1;log.push({i,t,km,skip:1});}}
+     else fire(i,t);
+    }}
+   if(audio&&t>=audio.te)audio=null;
+   // blocking audio: a whole narration before the SL, the heading only after it
+   const blocking=audio&&audio.i!==N-1&&(p<SL?t<audio.te:t<audio.th);
+   let g=0;while(g<N-1&&P[g+1]<=p)g++;
+   if(t<IGN)lay.push([0,Math.max(0,Math.min(1,(t-1.5)/3)),0]);
+   else{
+    const nx=g+1;let nop=0;
+    if(nx<N&&!skipped[nx]&&FIZ[nx]>0&&p>=P[nx]-FIZ[nx]){
+     const pos=Math.min(1,(p-(P[nx]-FIZ[nx]))/FIZ[nx]);
+     if(blocking&&nx!==N-1){blockedIn[nx]=1;nop=0;}
+     else if(blockedIn[nx]){if(catchT[nx]<0)catchT[nx]=t;nop=pos*Math.min(1,(t-catchT[nx])/prm.diss);}
+     else nop=pos;}
+    if(fired[g]&&!skipped[g]){
+     let op;
+     if(g===N-1||p<P[g]+EZ[g])op=1;
+     else if(CF[g]&&!blockedIn[g+1])op=1;
+     else op=Math.max(0,1-(p-(P[g]+EZ[g]))/FOZ[g]);
+     if(op>0)lay.push([g,op,CF[g]&&!blockedIn[g+1]&&p>=P[g]+EZ[g]?3:0]);}
+    if(nop>0)lay.push([nx,nop,blockedIn[nx]?4:0]);
+   }
+  } else {
+  /* ===== withdrawn July rule, kept for comparison: audio holds the picture ===== */
+  /* anchors */
+  for(let i=1;i<N;i++){
+   if(prevP<P[i]&&p>=P[i]&&!fired[i]&&!skipped[i]){
+    if(i===N-1){ if(audio){cutAt[audio.i]=t;if(hold&&hold.i===audio.i){release(hold.i,t);hold=null;}audio=null;}
+      if(hold){release(hold.i,t);hold=null;} fire(i,t); arrFired=t; if(prevArrOp<0.999){arrT=t;arrStart=prevArrOp;} }
+    else if(audio&&t<audio.te){
+      if(p>=SL&&t>=audio.th){cutAt[audio.i]=t;if(hold&&hold.i===audio.i){release(hold.i,t);hold=null;}audio=null;fire(i,t);}
+      else{skipped[i]=1;log.push({i,t,km,skip:1});}}
+    else fire(i,t);
+   }}
+  /* audio end */
+  if(audio&&t>=audio.te){if(hold&&hold.i===audio.i){release(hold.i,t);hold=null;}audio=null;}
+  /* hold start */
+  if(audio&&!hold&&audio.i<N-1&&p>=P[audio.i]+EZ[audio.i]&&!diss.some(d=>d.i===audio.i)){hold={i:audio.i,t0:t,km0:km,};}
+  /* layers */
+  diss=diss.filter(d=>t-d.t0<prm.diss);
+  for(const d of diss)if(!d.ghost)lay.push([d.i,1-(t-d.t0)/prm.diss,2]);
+  if(hold&&!hold.ghost)lay.push([hold.i,1,1]);
+  let g=0;while(g<N-1&&P[g+1]<=p)g++;
+  if(t<IGN)lay.push([0,Math.max(0,Math.min(1,(t-1.5)/3)),0]);
+  else{
+   if(fired[g]&&!skipped[g]&&!(hold&&hold.i===g&&!hold.ghost)&&!diss.some(d=>d.i===g&&!d.ghost)){
+    let op;
+    if(g===N-1)op=arrT>=0?arrStart+(1-arrStart)*Math.min(1,(t-arrT)/prm.diss):1;
+    else if(p<P[g]+EZ[g])op=1;
+    else if(CF[g])op=1;
+    else op=Math.max(0,1-(p-(P[g]+EZ[g]))/FOZ[g]);
+    if(op>0)lay.push([g,op,CF[g]&&p>=P[g]+EZ[g]?3:0]);}
+   const nx=g+1;
+   if(nx<N&&!hold&&!skipped[nx]&&FIZ[nx]>0&&p>=P[nx]-FIZ[nx]){
+    let op=Math.min(1,(p-(P[nx]-FIZ[nx]))/FIZ[nx]);
+    const dd=diss.find(d=>d.i<nx);
+    if(dd)op*=Math.min(1,(t-dd.t0)/prm.diss);
+    lay.push([nx,op,0]);}
+  }
+  }
+  lay.sort((a,b)=>a[0]-b[0]);
+  while(lay.length>3)lay.shift();
+  for(let k=0;k<3;k++){const x=lay[k];if(x){LI[k][n]=x[0];LO[k][n]=x[1];LK[k][n]=x[2];}}
+  prevArrOp=0;for(const x of lay)if(x[0]===N-1)prevArrOp=x[1];
+  if(audio){AI[n]=audio.i;AF[n]=(t-audio.t0)/(audio.te-audio.t0);}
+  T[n]=t;KM[n]=km;V[n]=v*3.6;
+  prevP=p;n++;t+=DT;
+  if(arrFired>=0&&t-arrFired>=8)break;
+ }
+ // holds summary from layers
+ const holdRuns=[];let cur=null;
+ for(let k=0;k<n;k++){let h=-1;for(let j=0;j<3;j++)if(LK[j][k]===1)h=LI[j][k];
+  if(h>=0&&(!cur||cur.i!==h)){cur={i:h,k0:k,k1:k};holdRuns.push(cur);}else if(h>=0)cur.k1=k;else cur=null;}
+ return {n,T,KM,V,LI,LO,LK,AI,AF,fired,skipped,cutAt,log,EZ,FOZ,FIZ,CF,holdRuns,total:T[n-1]};
+}
+
+/* ------------- derived stats ------------- */
+function stats(S,prm){
+ const skips=[];for(let i=0;i<N;i++)if(S.skipped[i])skips.push(i);
+ let cfs=0;for(let i=0;i<N-1;i++)if(S.CF[i])cfs++;
+ // distance-based coverage: sample per 10 m
+ let pic=0,fil=0,longest=0,run=0,runStart=0,longAt=0;
+ let k=0;
+ for(let x=0;x<L;x+=0.01){while(k<S.n-1&&S.KM[k]<x)k++;
+  let c=1;for(let j=0;j<3;j++)if(S.LI[j][k]>=0)c*=1-S.LO[j][k];
+  if(1-c>0.5){pic++;run=0;}else{fil++;if(run===0)runStart=x;run+=0.01;if(run>longest){longest=run;longAt=runStart;}}}
+ let vot=0;for(let q=0;q<S.n;q++){if(S.AI[q]<0)continue;let cc=1;for(let j=0;j<3;j++)if(S.LI[j][q]>=0)cc*=1-S.LO[j][q];if(1-cc<0.5)vot++;}
+ const holdS=S.holdRuns.reduce((a,h)=>a+(S.T[h.k1]-S.T[h.k0]),0);
+ return {skips,cfs,picShare:pic/(pic+fil),longest,longAt,holds:S.holdRuns.length,holdS,vot:vot*DT,cut:[...S.cutAt].filter(x=>x>=0).length};
+}
+
+/* ------------- UI state ------------- */
+let prm=null,ST=null,step=0,simT=0,playing=false;
+function readPrm(){
+ const g=id=>parseFloat($(id).value);
+ const fiz=g('pFIZ'),ez=g('pEZ'),foz=g('pFOZ'),floor=g('pFloor'),diss=g('pDiss');
+ const bad=[fiz,ez,foz,floor,diss].some(x=>!isFinite(x)||x<0);
+ if(bad)return 'Enter a number in every field, zero or more.';
+ if(fiz+ez+foz>100)return 'FIZ + EZ + FOZ cannot exceed 100% of a gap. Now '+(fiz+ez+foz)+'%.';
+ if(diss<0.2)return 'Dissolve must be at least 0.2 seconds.';
+ return {fiz:fiz/100,ez:ez/100,foz:foz/100,floor,diss,holdPic:$('pHold').checked};}
+function recompute(){
+ const r=readPrm();
+ if(typeof r==='string'){$('perr').textContent=r;return;}
+ $('perr').textContent='';
+ const keepKm=ST?ST.KM[step]:0;
+ prm=r;ST=simulate(prm);
+ jumpKm(keepKm,true);
+ renderStats();drawOverview();}
+let deb;['pFIZ','pEZ','pFOZ','pFloor','pDiss'].forEach(id=>$(id).addEventListener('input',()=>{clearTimeout(deb);deb=setTimeout(recompute,250);}));
+$('pHold').addEventListener('change',recompute);
+
+function stepAtKm(x){let lo=0,hi=ST.n-1;while(lo<hi){const m=(lo+hi)>>1;if(ST.KM[m]<x)lo=m+1;else hi=m;}return lo;}
+function jumpKm(x,silent){step=stepAtKm(Math.max(0,Math.min(L,x)));if(x<=0)step=0;simT=ST.T[step];resetFlyers();}
+$('kmS').addEventListener('input',e=>jumpKm(+e.target.value));
+$('play').onclick=()=>{if(step>=ST.n-1){step=0;simT=0;}playing=!playing;$('play').textContent=playing?'Pause':'Play';};
+$('prev').onclick=()=>{const p=ST.KM[step]/L;let i=N-1;while(i>0&&EV[i].p*L>=ST.KM[step]-0.02)i--;jumpKm(Math.max(0,(EV[i].p-ST.FIZ[i])*L-0.03));};
+$('next').onclick=()=>{let i=0;while(i<N&&EV[i].p*L-ST.FIZ[i]*L<=ST.KM[step]+0.05)i++;if(i<N)jumpKm((EV[i].p-ST.FIZ[i])*L-0.03);};
+
+/* ------------- stats render ------------- */
+function fmtT(s){s=Math.max(0,Math.round(s));return Math.floor(s/3600)+':'+String(Math.floor(s/60)%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function renderStats(){
+ const s=stats(ST,prm);
+ const items=[['Skipped events',s.skips.length],['Audio holds',s.holds],['Held, total',Math.round(s.holdS/60)+' min'],['No-filler gaps',s.cfs],['Road with a picture',Math.round(s.picShare*100)+'%'],['Narration over tunnel',Math.round(s.vot/60)+' min'],['Longest tunnel',s.longest.toFixed(1)+' km'],['Bodies cut after 99%',s.cut]];
+ $('stats').innerHTML=items.map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('');
+ $('skiplist').innerHTML=s.skips.length?'<b>Skipped:</b> '+s.skips.map(i=>`${i} ${EV[i].h.replace(/\.$/,'')} (${(EV[i].p*L).toFixed(1)} km, ${EV[i].t})`).join(' · '):'No events skipped with these settings.';
+ $('ttime').textContent=fmtT(ST.total)+' ('+Math.round(ST.total/60)+' min)';
+ $('tavg').textContent=Math.round(L/(ST.total/3600))+' km/h';
+}
+$('segtab').innerHTML=SEGS.map(s=>`<tr><td>${s[3]}</td><td>${s[0]}–${s[1]}</td><td>${s[2]} km/h</td><td>${STOPS.filter(x=>x>=s[0]&&x<s[1]).map(x=>x+' km').join(', ')||'—'}</td></tr>`).join('');
+
+/* ------------- strips ------------- */
+function stripColor(k){
+ let c=1,held=0,diss=0;for(let j=0;j<3;j++)if(ST.LI[j][k]>=0){c*=1-ST.LO[j][k];if(ST.LK[j][k]===1)held=1;if(ST.LK[j][k]===2)diss=1;}
+ const cov=1-c;
+ if(held)return [224,162,58];
+ const f=ST.AI[k]>=0?[34,78,86]:[42,49,80],e=[207,214,255];
+ const col=f.map((v,i)=>Math.round(v+(e[i]-v)*cov));
+ if(diss)return col.map((v,i)=>Math.round(v*.6+[224,162,58][i]*.4));
+ return col;}
+function drawStrip(cv,x0,x1,labels){
+ const dpr=devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;
+ cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+ const c=cv.getContext('2d');c.scale(dpr,dpr);
+ c.fillStyle='#0b0d15';c.fillRect(0,0,W,H);
+ const top=labels?24:6,bh=H-top-14;
+ for(let px=0;px<W;px++){const x=x0+(x1-x0)*(px+.5)/W;const k=stepAtKm(x);c.fillStyle=css(stripColor(k).map(v=>v/255));c.fillRect(px,top,1,bh);}
+ // SL
+ const X=km=>(km-x0)/(x1-x0)*W;
+ c.strokeStyle='rgba(196,66,63,.9)';c.setLineDash([3,3]);c.beginPath();c.moveTo(X(SL*L),top-4);c.lineTo(X(SL*L),top+bh+4);c.stroke();c.setLineDash([]);
+ c.font='10px "Space Mono", monospace';c.textBaseline='top';
+ let lastLabel=-1e9;
+ for(let i=0;i<N;i++){const km=EV[i].p*L;if(km<x0-0.001||km>x1+0.001)continue;const x=X(km);
+  if(ST.skipped[i]){c.fillStyle='#ff5a52';c.fillRect(x-1,top-3,2,bh+6);}
+  else{c.fillStyle='#fff';c.fillRect(x-.5,top,1,bh);}
+  if(labels&&x-lastLabel>70){c.fillStyle=ST.skipped[i]?'#ff5a52':'#cfd3e2';c.fillText(i+' '+EV[i].h.replace(/\.$/,''),Math.min(x+3,W-80),4);lastLabel=x;}}
+ // km ticks
+ c.fillStyle='#8d93a8';c.textBaseline='bottom';
+ const span=x1-x0,stepK=span>100?20:span>10?2:span>2?0.5:0.1;
+ for(let k=Math.ceil(x0/stepK)*stepK;k<=x1;k+=stepK){const x=X(k);c.fillRect(x,H-12,1,3);c.fillText((stepK<1?k.toFixed(1):Math.round(k))+'',x+2,H);}
+ // cursor
+ const ck=ST.KM[step];c.fillStyle='#c4423f';c.fillRect(X(ck)-1,0,2,H-12);
+}
+let ovCache=null;
+function drawOverview(){drawStrip($('s1'),0,L,false);ovCache=null;}
+function drawZoom(){const w=+$('zoom').value,ck=ST.KM[step];let x0=ck-w/2;x0=Math.max(0,Math.min(L-w,x0));drawStrip($('s2'),x0,x0+w,true);}
+function stripClick(cv,getRange){cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect(),[x0,x1]=getRange();jumpKm(x0+(x1-x0)*(e.clientX-r.left)/r.width);});}
+stripClick($('s1'),()=>[0,L]);
+stripClick($('s2'),()=>{const w=+$('zoom').value,ck=ST.KM[step];let x0=Math.max(0,Math.min(L-w,ck-w/2));return [x0,x0+w];});
+$('zoom').onchange=()=>drawZoom();
+addEventListener('resize',()=>{drawOverview();drawZoom();});
+
+/* ------------- tunnel ------------- */
+const FS=`precision highp float;
+uniform vec2 R;uniform float T,E,F,S,W,C;uniform vec3 A,B;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+void main(){vec2 p=(gl_FragCoord.xy-.5*R)/R.y;float r0=length(p);
+float far=pow(1.-smoothstep(0.,.55,r0),2.);
+vec2 b=vec2(sin(W*.31)+.4*sin(W*.73),cos(W*.23)+.4*cos(W*.61))*.09*C;vec2 q=p-b*far;
+float r=length(q),a=atan(q.y,q.x);float z=.35/r+T;
+float gz=abs(fract(z)-.5),ga=abs(fract(a*12./6.2832)-.5);
+float g=(smoothstep(.06,0.,gz)+smoothstep(.05,0.,ga))*smoothstep(.04,.35,r)*smoothstep(1.4,.6,r);
+vec3 col=mix(A,B,E);float st=0.;
+for(int i=0;i<4;i++){float d=fract(float(i)*.25+T*.12);float s=mix(18.,.8,d);vec2 gg=(p-b*far*.5)*s+float(i)*7.3;
+vec2 id=floor(gg),f=fract(gg)-.5;vec2 o=vec2(h(id+1.),h(id+2.))-.5;float tw=.7+.3*sin(W*4.+h(id+3.)*40.);
+st+=smoothstep(.07,0.,length(f-o*.7))*step(.82,h(id))*d*smoothstep(1.,.85,d)*tw;}
+vec3 o=(g*col*.55+st*vec3(.95,.97,1.)+col*.12/(r*10.+1.))*F+vec3(1.,.93,.8)*S*exp(-r0*2.5);
+gl_FragColor=vec4(o,1.);}`;
+// milestones: every 0.1 Ga, then every 10 Ma below 100 Ma
+let MIL=[];
+function buildMil(){MIL=[];const ys=[];for(let y=Math.floor(SPAN/1e8-1e-9)*1e8;y>=0.1e9-1;y-=0.1e9)ys.push(Math.round(y/1e8)*1e8);for(let y=90e6;y>=10e6;y-=10e6)ys.push(y);
+ ys.forEach((y,k)=>MIL.push({y,km:(SPAN-y)/SPAN*L,ang:(k%2?Math.PI:0)+((k*.618)%1-.5)*.9}));}
+const fmtMil=y=>y>=1e9?(y/1e9).toFixed(1)+' Ga':Math.round(y/1e6)+' Ma';
+const flyers=[];let nextF=3,lastFa=-1,fSide=1;
+function resetFlyers(){flyers.length=0;}
+
+const c=$('c'),gl=c.getContext('webgl'),o=$('o'),ctx=o.getContext('2d');
+if(!gl){$('err').textContent='WebGL is not available in this browser, so the tunnel cannot be drawn. The strips and figures still work.';}
+let U={};
+if(gl){
+ const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+ const sh=(ty,s)=>{const x=gl.createShader(ty);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(x));return x;};
+ const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
+ gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+ const lp=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(lp);gl.vertexAttribPointer(lp,2,gl.FLOAT,false,0,0);
+ ['R','T','E','F','S','W','C','A','B'].forEach(k=>U[k]=gl.getUniformLocation(pr,k));
+}
+
+/* ------------- plates ------------- */
+function wrap(text,maxW){const words=text.split(' ');const lines=[];let cur='';for(const w of words){const t=cur?cur+' '+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w;}else cur=t;}if(cur)lines.push(cur);return lines;}
+function drawPlate(i,alpha){
+ if(alpha<=0)return;
+ const W=o.width,H=o.height,dpr=devicePixelRatio||1;
+ ctx.save();ctx.globalAlpha=Math.min(1,alpha);
+ const col=plateCol[i];
+ const g=ctx.createRadialGradient(W*.5,H*.42,0,W*.5,H*.42,H*.6);
+ g.addColorStop(0,css(col.map(v=>Math.min(1,v*1.15+.01))));g.addColorStop(1,css(col));
+ const tc=css(plateTxt[i]);
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ ctx.fillStyle=tc;ctx.textAlign='center';ctx.textBaseline='alphabetic';
+ ctx.font=`400 ${11*dpr}px "Space Mono", monospace`;
+ ctx.fillText(`#${i} · tier ${EV[i].t} · placeholder`,W/2,H*.2);
+ const hs=Math.round(30*dpr);ctx.font=`700 ${hs}px "Syne", "Helvetica Neue", Arial, sans-serif`;ctx.fillStyle=tc;
+ const lines=wrap(EV[i].h.replace(/\.$/,''),W*.8);
+ let y=H*.42-(lines.length-1)*hs*.55;
+ for(const l of lines){ctx.fillText(l,W/2,y);y+=hs*1.1;}
+ ctx.font=`400 ${15*dpr}px "Space Mono", monospace`;ctx.fillStyle=tc;
+ ctx.fillText(EV[i].d.replace(' (bln years ago)',''),W/2,y+hs*.3);
+ ctx.restore();}
+
+/* ------------- frame ------------- */
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let last=performance.now(),tt=0,ww=0,vs=0,anim=0,uiT=0,zoomT=0;
+const vAvgKmh=()=>L/(ST.total/3600);
+function ease(x,y,dt,tau){return x+(y-x)*(1-Math.exp(-dt/tau));}
+function frame(now){
+ const dt=Math.min(.05,(now-last)/1000);last=now;
+ if(!ST){requestAnimationFrame(frame);return;}
+ if(playing){simT+=dt*(+$('rate').value);while(step<ST.n-1&&ST.T[step+1]<=simT)step++;if(step>=ST.n-1){playing=false;$('play').textContent='Play';}}
+ const km=ST.KM[step],p=km/L,t=ST.T[step];
+ const W2=Math.round(c.clientWidth*devicePixelRatio),H2=Math.round(c.clientHeight*devicePixelRatio);
+ if(c.width!==W2||c.height!==H2){c.width=o.width=W2;c.height=o.height=H2;}
+ const k=reduce?.3:1;
+ vs=ease(vs,ST.V[step],dt,1);
+ const r=vs/vAvgKmh();const parked=vs<3;
+ anim=ease(anim,parked?0:Math.min(2,r<1?Math.sqrt(r):1+(r-1)/2),dt,1);
+ tt+=dt*anim*k;ww+=dt*(.25+.75*Math.min(1,anim))*k;
+ const hue=rampHue(p),w=rampW(p);
+ const tcol=oklch(.62+.12*w,.13,hue);
+ const vis=t<IGN?0:1;
+ if(gl){gl.viewport(0,0,c.width,c.height);
+  gl.uniform2f(U.R,c.width,c.height);gl.uniform1f(U.T,tt);gl.uniform1f(U.W,ww);gl.uniform1f(U.E,0);gl.uniform1f(U.F,vis);gl.uniform1f(U.S,0);gl.uniform1f(U.C,1);
+  gl.uniform3fv(U.A,tcol);gl.uniform3fv(U.B,tcol);gl.drawArrays(gl.TRIANGLES,0,3);}
+ ctx.clearRect(0,0,o.width,o.height);
+ const cx=o.width/2,cy=o.height/2,H=o.height,dpr=devicePixelRatio||1;
+ ctx.textAlign='center';ctx.textBaseline='middle';
+ if(vis){
+  // time marks: tied to the road
+  const D=vAvgKmh()*4*(+$('rate').value)/3600,Z0=.9,ZF=3.2;
+  if($('tm').checked)for(const m of MIL){const ahead=m.km-km;if(ahead>D||ahead<-D)continue;const z=Z0+ahead/D*(ZF-Z0);if(z<.4)continue;
+   const rr=(.35/z)*H*.55,x=cx+Math.cos(m.ang)*rr,y=cy+Math.sin(m.ang)*rr*.9;
+   const a=Math.max(0,Math.min(1,(3.2-z)*1.2)*Math.min(1,(z-.4)*2.5));
+   ctx.font=`700 ${Math.max(4,15*dpr/z*1.1)}px "Space Mono", monospace`;ctx.fillStyle=`rgba(235,238,250,${a*.9})`;
+   ctx.fillText(fmtMil(m.y),x,y);}
+  // formulas: wall clock
+  nextF-=dt*k;
+  if(nextF<=0){nextF=7+Math.random()*3;if($('fx').checked){const pk=pickFloater(SPAN*(1-km/L));fSide=-fSide;
+   flyers.push({text:pk[0],kind:pk[1],ang:(fSide<0?Math.PI:0)+(Math.random()-.5)*1.1,spin:(Math.random()<.5?-1:1)*.03,age:0});}}
+  const fc=tcol.map(v=>Math.round(v*255)).join(',');
+  for(let i=flyers.length-1;i>=0;i--){const F=flyers[i];F.age+=dt*k;if(F.age>10){flyers.splice(i,1);continue;}
+   const z=2+(1.05-2)*F.age/10;F.ang+=F.spin*dt*k;const fade=Math.min(1,F.age/1.5)*Math.min(1,(10-F.age)/2);
+   const rr=(.35/z)*H*.55;let x=cx+Math.cos(F.ang)*rr;const y=cy+Math.sin(F.ang)*rr*.9;
+   ctx.font=F.kind==='s'?`italic 400 ${14*dpr/z*1.1}px "IBM Plex Sans", system-ui, sans-serif`:F.kind==='n'?`500 ${14*dpr/z*1.1}px "IBM Plex Sans", system-ui, sans-serif`:`400 ${13*dpr/z*1.1}px "Space Mono", monospace`;const half=ctx.measureText(F.text).width/2,pad=10*dpr;
+   x=Math.max(half+pad,Math.min(o.width-half-pad,x));ctx.fillStyle=`rgba(${fc},${.75*fade})`;ctx.fillText(F.text,x,y);}
+ } else {ctx.fillStyle='#000';ctx.fillRect(0,0,o.width,o.height);}
+ // plates, bottom to top
+ for(let j=0;j<3;j++){const i=ST.LI[j][step];if(i>=0)drawPlate(i,ST.LO[j][step]);}
+
+ // UI, throttled
+ uiT-=dt;
+ if(uiT<=0){uiT=.1;
+  const age=SPAN*(1-p);
+  $('hudL').innerHTML=km.toFixed(2)+' km<br>'+(p*100).toFixed(2)+'%';
+  $('hudR').innerHTML=(age>=1e9?(age/1e9).toFixed(2)+' Ga':age>=1e6?Math.round(age/1e6)+' Ma':age>=1e3?Math.round(age/1e3)+' ka':'today')+'<br>'+Math.round(ST.V[step])+' km/h';
+  const ai=ST.AI[step];
+  if(ai>=0){$('nowD').textContent='Narrating · #'+ai+' · '+EV[ai].d.replace(' (bln years ago)','');$('nowH').textContent=EV[ai].h;$('abar').firstChild.style.width=(ST.AF[step]*100).toFixed(1)+'%';}
+  else{$('nowD').textContent='Silence';$('nowH').textContent='—';$('abar').firstChild.style.width='0';}
+  $('jbar').firstChild.style.width=(p*100).toFixed(2)+'%';
+  $('kmS').value=km.toFixed(2);$('kmO').textContent=km.toFixed(2)+' km';
+  $('rT').textContent=fmtT(t);$('rV').textContent=Math.round(ST.V[step])+' km/h';$('rSeg').textContent=segAt(km)[3];
+  let ni=0;while(ni<N&&EV[ni].p*L<=km+1e-6)ni++;
+  $('rNext').textContent=ni<N?'#'+ni+' in '+(EV[ni].p*L-km).toFixed(2)+' km':'—';
+  // state line
+  let s='Filler · tunnel';const parts=[];
+  for(let j=2;j>=0;j--){const i=ST.LI[j][step];if(i<0)continue;const op=ST.LO[j][step],kd=ST.LK[j][step];
+   let what;
+   if(t<IGN)what='ignition, fading up from black';
+   else if(kd===1)what='held by its narration';
+   else if(kd===2)what='dissolving after the hold';
+   else if(kd===3)what='full, under the next one (no filler)';
+   else if(kd===4)what='catching up after blocking audio';
+   else if(km<EV[i].p*L-1e-6)what='fading in';
+   else if(op>=.999)what='full';else what='fading out';
+   parts.push(`#${i} ${what} · ${Math.round(op*100)}%`);}
+  if(parts.length)s=parts.join('  |  ');else if(ST.AI[step]>=0)s='Filler · tunnel · narration of #'+ST.AI[step]+' continues';
+  if(t<1.5)s='Ignition · black';
+  $('state').textContent=s;
+ }
+ zoomT-=dt;if(zoomT<=0){zoomT=playing?.25:.1;drawZoom();drawOverviewCursor();}
+ requestAnimationFrame(frame);}
+function drawOverviewCursor(){drawStrip($('s1'),0,L,false);}
+function setDeck(key){const d=DECKS[key]||DECKS.universe;DECK=DECKS[key]?key:'universe';
+ EV=d.events;N=EV.length;SPAN=d.span;FORMULAS=d.formulas;NAMES=d.names||[];lastTexts=[];buildPlates();buildMil();
+ playing=false;$('play').textContent='Play';ST=null;step=0;simT=0;resetFlyers();
+ $('deck').value=DECK;
+ $('eyebrow').textContent='The Original Time Machine · '+d.name+' · '+N+' events · trip simulator v3 · ledger §O · '+d.texts;
+ $('deckname').textContent=d.name.replace(' ENG','');
+ try{localStorage.setItem('ttsim-deck',DECK);}catch(e){}
+ recompute();}
+$('deck').addEventListener('change',e=>setDeck(e.target.value));
+let startDeck='universe';try{startDeck=localStorage.getItem('ttsim-deck')||'universe';}catch(e){}
+setDeck(startDeck);
+requestAnimationFrame(frame);
+</script>
+
+
+<p style="max-width:1100px;margin:0 auto;padding:0 16px 32px;font:12px 'Space Mono',monospace;color:#8d93a8">Build v3.1 · 2026-10-11</p>
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));</script>
+</body>
+</html>
