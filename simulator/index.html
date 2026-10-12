@@ -11,11 +11,11 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="sim-version" content="v4.1 · 2026-10-12">
+<meta name="sim-version" content="v4.2 · 2026-10-12">
 <style>html,body{margin:0;background:#07080d}*,*::before,*::after{box-sizing:border-box}</style>
 </head>
 <body>
-<title>Tallinn–Tartu Trip Simulator</title>
+<title>Time Machine Trip Simulator</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&family=Syne:wght@600;700&display=swap">
 <style>
 /* Layout: two columns on wide screens (phone stage | controls + readouts), stacked on phones; trip strips full width below; notes last */
@@ -87,8 +87,8 @@ th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:upp
 <div class="wrap">
 <header>
 <p class="eyebrow" id="eyebrow">The Original Time Machine · trip simulator v3</p>
-<h1>Tallinn–Tartu trip simulator</h1>
-<p style="color:var(--muted);margin-top:8px">A <span id="routedesc">realistic 186 km drive from Vabaduse väljak to Raekoja plats</span> carrying every event of the chosen deck (<span id="deckname">Universe</span>), run under the playback rules in ledger §O (approved 2026-10-10): the road owns the picture, the voice may outlive it. Change the zone widths and the whole trip is recomputed.</p>
+<h1>Time Machine trip simulator</h1>
+<p style="color:var(--muted);margin-top:8px">A <span id="routedesc">realistic 186 km drive from Vabaduse väljak to Raekoja plats</span> carrying every event of the chosen timeline (<span id="deckname">Universe</span>), played under the rules in ledger §O: the road owns the picture, the voice may outlive it. Change the timeline, the route or the zone widths and the whole trip is recomputed.</p>
 </header>
 
 <div class="top">
@@ -134,38 +134,6 @@ th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:upp
 </div>
 
 <div class="card">
-<h2>Route</h2>
-<div class="row">
-<select id="route" aria-label="Route"><option value="tt">Tallinn–Tartu, 186 km (the real road)</option><option value="custom">Any length</option></select>
-<label class="row" style="gap:6px"><input type="number" id="routeKm" min="1" max="1000" step="1" value="186" aria-label="Route length in km" disabled> km</label>
-</div>
-<p style="font-size:13px;color:var(--muted)">Any length uses a generic drive: town streets at 40 km/h with a red light every 1.6 km at both ends, open road in between (50–100 km/h, faster on longer routes), and a slow last stretch to the door. The table under <em>The drive</em> shows it.</p>
-<div class="row"><button id="scan">Scan route lengths</button><span id="scanmsg" style="font-size:13px;color:var(--muted)"></span></div>
-<div class="tw" id="scanout" style="max-height:340px;overflow-y:auto"></div>
-</div>
-
-<div class="card">
-<h2>Colours</h2>
-<div class="row">
-<label class="row" style="gap:6px">Start <input type="color" id="colA" aria-label="Start colour"></label>
-<label class="row" style="gap:6px">End <input type="color" id="colB" aria-label="End colour"></label>
-<select id="arc" aria-label="Way round the colour wheel"><option value="short">Short way round</option><option value="long">Long way round</option></select>
-<button id="colReset">Reset</button>
-</div>
-<canvas id="ramp" style="width:100%;height:28px;border-radius:6px;border:1px solid var(--line);display:block"></canvas>
-<p style="font-size:13px;color:var(--muted)">The simulator blends from the start colour to the end colour along the road (in OKLCH, so the steps look even), using the start and end lightness too. The tunnel lines take the same hue, brighter. Between two hues there are two ways round the colour wheel; the other way passes through the opposite colours. Saved per deck in this browser.</p>
-</div>
-
-<div class="card">
-<h2>Saved settings</h2>
-<p style="font-size:13px;color:var(--muted)">Everything you change is kept automatically in this browser on this device. Name a setup to keep several side by side. <em>Copy link</em> packs the whole setup into a link: open it on another device, or paste it to Claude.</p>
-<div class="row"><input type="text" id="cfgName" placeholder="Name this setup" aria-label="Setup name" style="flex:1;min-width:140px;font:500 14px var(--body);color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px"><button id="cfgSave">Save</button></div>
-<div class="row"><select id="cfgList" aria-label="Saved setups" style="flex:1;min-width:140px"></select><button id="cfgLoad">Load</button><button id="cfgDel">Delete</button></div>
-<div class="row"><button id="cfgLink">Copy link</button><button id="cfgReset">Reset to defaults</button><span id="cfgMsg" style="font-size:13px;color:var(--muted)"></span></div>
-<input type="text" id="cfgOut" readonly aria-label="Setup link" hidden style="width:100%;font:12px var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px">
-</div>
-
-<div class="card">
 <h2>Zone widths</h2>
 <div class="params">
 <label for="pFIZ">FIZ · fade-in <input type="number" id="pFIZ" min="0" max="100" step="1" value="5"><small>% of the gap before the event</small></label>
@@ -177,6 +145,27 @@ th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:upp
 <div class="checks"><label><input type="checkbox" id="pHold"> Compare: the withdrawn audio hold</label></div>
 <p style="font-size:13px;color:var(--muted)">Off is §O: the road owns the picture and the voice may carry on over the tunnel. On brings back the July rule withdrawn on 2026-10-10 (§O.8), where the narration held the picture, for comparison only. Changing anything recomputes the whole trip.</p>
 <p id="perr" role="alert"></p>
+</div>
+
+<div class="card">
+<h2>Route</h2>
+<div class="row">
+<select id="route" aria-label="Route"><option value="tt">Tallinn–Tartu, 186 km (the real road)</option><option value="custom">Any length</option></select>
+<label class="row" style="gap:6px"><input type="number" id="routeKm" min="1" max="1000" step="1" value="186" aria-label="Route length in km" disabled> km</label>
+</div>
+<p style="font-size:13px;color:var(--muted)">Any length uses a generic drive: town streets at 40 km/h with a red light every 1.6 km at both ends, open road in between (50–100 km/h, faster on longer routes), and a slow last stretch to the door. The table under <em>The drive</em> shows it.</p>
+</div>
+
+<div class="card">
+<h2>Tunnel colours</h2>
+<div class="row">
+<label class="row" style="gap:6px">Start <input type="color" id="colA" aria-label="Start colour"></label>
+<label class="row" style="gap:6px">End <input type="color" id="colB" aria-label="End colour"></label>
+<select id="arc" aria-label="Way round the colour wheel"><option value="short">Short way round</option><option value="long">Long way round</option></select>
+<button id="colReset">Reset</button>
+</div>
+<canvas id="ramp" style="width:100%;height:28px;border-radius:6px;border:1px solid var(--line);display:block"></canvas>
+<p style="font-size:13px;color:var(--muted)">The colour of the tunnel's grid lines: the start colour at the first event, the end colour at the arrival, blended evenly in between (in OKLCH, lightness included). Between two hues there are two ways round the colour wheel; the other way passes through the opposite colours. Each timeline keeps its own colours. The cards are placeholders and keep their own fixed colours.</p>
 </div>
 </div>
 </div>
@@ -197,13 +186,30 @@ th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:upp
 <section class="stats" id="stats"></section>
 <p id="skiplist"></p>
 
+<div class="card">
+<h2>Saved settings</h2>
+<p style="font-size:13px;color:var(--muted)">Everything you change is kept automatically in this browser on this device. Name a setup to keep several side by side. <em>Copy link</em> packs the whole setup into a link: open it on another device, or paste it to Claude.</p>
+<div class="row"><input type="text" id="cfgName" placeholder="Name this setup" aria-label="Setup name" style="flex:1;min-width:140px;font:500 14px var(--body);color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px"><button id="cfgSave">Save</button></div>
+<div class="row"><select id="cfgList" aria-label="Saved setups" style="flex:1;min-width:140px"></select><button id="cfgLoad">Load</button><button id="cfgDel">Delete</button></div>
+<div class="row"><button id="cfgLink">Copy link</button><button id="cfgReset">Reset to defaults</button><span id="cfgMsg" style="font-size:13px;color:var(--muted)"></span></div>
+<input type="text" id="cfgOut" readonly aria-label="Setup link" hidden style="width:100%;font:12px var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px">
+</div>
+
+<details class="card" id="scanbox">
+<summary style="cursor:pointer;font-family:var(--display);font-weight:600;font-size:18px">Route length scan</summary>
+<p style="font-size:13px;color:var(--muted)">Runs the chosen timeline over generic routes from 5 to 400 km with the current zone settings, and counts the events skipped on each. Hover a number for the names.</p>
+<div class="row"><button id="scan">Scan route lengths</button><span id="scanmsg" style="font-size:13px;color:var(--muted)"></span></div>
+<div class="tw" id="scanout" style="max-height:340px;overflow-y:auto"></div>
+</details>
+
 <section class="notes">
 <section>
 <p class="eyebrow">How to use it</p>
 <ul>
+<li><strong>Pause</strong> stops everything: the road, the tunnel, the time marks and the floating formulas and names.</li>
 <li><strong>Drag the distance slider</strong> to go anywhere on the road, or click either strip. <strong>Play</strong> runs the trip in time, red lights included; dragging jumps over them, because a stop has no length on the road.</li>
 <li>Judge the feel at <strong>1×</strong>. At higher speeds the narration and the catch-up fade run fast too, which is fine for finding places but not for judging fades.</li>
-<li>Change the <strong>zone widths</strong> and the whole trip is recomputed from the start: skips, blocked fade-ins and crossfades all move. The figures under the strips are for comparing settings.</li>
+<li>Change the <strong>timeline, route or zone widths</strong> and the whole trip is recomputed from the start: skips, blocked fade-ins and crossfades all move. The figures under the strips are for comparing settings.</li>
 <li>The corner shows distance, trip share, age and speed. The bottom panel shows the event being narrated, how far its narration has got, and the journey bar.</li>
 <li>Pictures are placeholders: the event's real heading and date on the §K.3 colour at its position. The text is deliberately low-contrast, the plate's own colour a little lighter or darker, so that like a real card it only reads once the picture is fully there.</li>
 <li><strong>Time marks</strong> come every 0.1 Ga (every 10 Ma below 100 Ma), each passing at its exact point on the road. They fly in the tunnel, so an event picture covers any that fall inside its zones.</li>
@@ -246,7 +252,7 @@ arrival  : never blocked, always fires, cuts any audio</div>
 <li><strong>Narration is heading plus body only</strong>, as in §M. If the TTS also reads the spoken date first, every narration is about two seconds longer.</li>
 <li><strong>Ignition:</strong> 1.5 s of black, the first picture fades up over 3 s, narration starts at 4.5 s, and the car pulls away at 5 s.</li>
 <li><strong>No-filler gap, fade-in blocked part-way:</strong> once the earlier picture has started fading out by road, it keeps fading; it does not jump back to full when the next one resumes.</li>
-<li><strong>Colour</strong> blends between the start and end colours set under <em>Colours</em>, advancing 75% by event index and 25% by distance (§K.3). The default is the §K.3 Universe ramp (hue 355° → 195°). The physics chroma profile is not modelled.</li>
+<li><strong>Tunnel colour</strong> blends between the start and end colours set under <em>Tunnel colours</em>, advancing 75% by event index and 25% by distance (§K.3). The default is the §K.3 ramp (hue 355° → 195°). Placeholder cards keep that default ramp. The physics chroma profile is not modelled.</li>
 <li><strong>Approach cue:</strong> across each gap the tunnel's rings grow denser, up to four times, and thinner as they do, so the next event is felt coming. The angular lines stay as they are. Off restores the plain tunnel.</li>
 <li><strong>Earth &amp; Life formulas</strong> (decay law, half-life, uranium–lead, potassium–argon, photosynthesis, respiration, iron rusting out of the sea, chalk, acid sea, the carbon fingerprint, DNA pairs) are a first set for your editorial pass (§K.8). <strong>Names float too</strong> (Earth &amp; Life): eons, eras, periods, epochs, glaciations, continents and oceans, and species in italics, without explanations. A name floats only while it is true at your position on the road; formulas float anywhere.</li>
 </ol>
@@ -304,7 +310,7 @@ function hex2oklch(hex){const n=parseInt(hex.slice(1),16);const c=[n>>16&255,n>>
  const Lc=.2104542553*l+.7936177850*m-.0040720468*s,a=1.9779984951*l-2.4285922050*m+.4505937099*s,b=.0259040371*l+.7827717662*m-.8086757660*s;
  return [Lc,Math.hypot(a,b),(Math.atan2(b,a)*180/Math.PI+360)%360];}
 const hex=c=>'#'+c.map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('');
-const COLDEF={a:hex(oklch(.14,.11,355)),b:hex(oklch(.34,.11,195)),arc:'short'};
+const COLDEF={a:hex(oklch(.62,.13,355)),b:hex(oklch(.74,.13,195)),arc:'short'};
 let COL={...COLDEF},CA=hex2oklch(COLDEF.a),CB=hex2oklch(COLDEF.b);
 function setCols(a,b,arc){COL={a,b,arc};CA=hex2oklch(a);CB=hex2oklch(b);}
 function rampLCH(w){let d=CB[2]-CA[2];if(d>180)d-=360;if(d<-180)d+=360;if(COL.arc==='long')d=d>0?d-360:d+360;
@@ -313,9 +319,10 @@ function rampLCH(w){let d=CB[2]-CA[2];if(d>180)d-=360;if(d<-180)d+=360;if(COL.ar
  return [CA[0]+(CB[0]-CA[0])*w,CA[1]+(CB[1]-CA[1])*w,((hA+d*w)%360+360)%360];}
 function rampHue(p){return rampLCH(rampW(p))[2];}
 let plateCol=[],plateTxt=[];
-function buildPlates(){plateCol=EV.map(e=>{const [l,c,h]=rampLCH(rampW(e.p));return oklch(l,c,h);});
+// placeholder cards keep the fixed §K.3 ramp; the colour pickers drive the tunnel lines only
+function buildPlates(){plateCol=EV.map(e=>{const w=rampW(e.p);return oklch(.14+.2*w,.11,355-160*w);});
 // low-contrast text: the plate's own colour, slightly lighter on even events, slightly darker on odd ones
-plateTxt=EV.map((e,i)=>{const [l,c,h]=rampLCH(rampW(e.p));return oklch(Math.min(.95,Math.max(.03,l+(l>.6?-.12:(i%2?-.05:.1)))),c,h);});}
+plateTxt=EV.map((e,i)=>{const w=rampW(e.p);return oklch(.14+.2*w+(i%2?-.05:.1),.11,355-160*w);});}
 const css=c=>`rgb(${c.map(v=>Math.round(v*255)).join(',')})`;
 
 /* ------------- simulation ------------- */
@@ -611,15 +618,16 @@ function frame(now){
  const W2=Math.round(c.clientWidth*devicePixelRatio),H2=Math.round(c.clientHeight*devicePixelRatio);
  if(c.width!==W2||c.height!==H2){c.width=o.width=W2;c.height=o.height=H2;}
  const k=reduce?.3:1;
+ const adt=playing?dt:0; // paused: the tunnel, stars, time marks and floaters all hold still
  vs=ease(vs,ST.V[step],dt,1);
  const r=vs/vAvgKmh();const parked=vs<3;
  anim=ease(anim,parked?0:Math.min(2,r<1?Math.sqrt(r):1+(r-1)/2),dt,1);
  // approach cue: ring density K rises from 1 to 4 across each gap (quadratic), eased; the ring phase is integrated so a changing K never makes the rings jump
  {let gi=0;while(gi<N-2&&EV[gi+1].p<=p)gi++;const s=EV[gi+1].p-EV[gi].p,u=s>0?Math.min(1,Math.max(0,(p-EV[gi].p)/s)):0;
-  const kt=$('cue').checked?1+3*u*u:1;kd=ease(kd,kt,dt,.4);}
- tt+=dt*anim*k;ph+=dt*anim*k*kd;ww+=dt*(.25+.75*Math.min(1,anim))*k;
+  const kt=$('cue').checked?1+3*u*u:1;kd=ease(kd,kt,adt,.4);}
+ tt+=adt*anim*k;ph+=adt*anim*k*kd;ww+=adt*(.25+.75*Math.min(1,anim))*k;
  const w=rampW(p),RL=rampLCH(w);
- const tcol=oklch(Math.min(.9,Math.max(.6,RL[0]+.45)),Math.max(.06,RL[1]),RL[2]);
+ const tcol=oklch(RL[0],RL[1],RL[2]);
  const vis=t<IGN?0:1;
  if(gl){gl.viewport(0,0,c.width,c.height);
   gl.uniform2f(U.R,c.width,c.height);gl.uniform1f(U.T,tt);gl.uniform1f(U.P,ph);gl.uniform1f(U.K,kd);gl.uniform1f(U.W,ww);gl.uniform1f(U.E,0);gl.uniform1f(U.F,vis);gl.uniform1f(U.S,0);gl.uniform1f(U.C,1);
@@ -636,12 +644,12 @@ function frame(now){
    ctx.font=`700 ${Math.max(4,15*dpr/z*1.1)}px "Space Mono", monospace`;ctx.fillStyle=`rgba(235,238,250,${a*.9})`;
    ctx.fillText(fmtMil(m.y),x,y);}
   // formulas: wall clock
-  nextF-=dt*k;
+  nextF-=adt*k;
   if(nextF<=0){nextF=7+Math.random()*3;if($('fx').checked){const pk=pickFloater(SPAN*(1-km/L));fSide=-fSide;
    flyers.push({text:pk[0],kind:pk[1],ang:(fSide<0?Math.PI:0)+(Math.random()-.5)*1.1,spin:(Math.random()<.5?-1:1)*.03,age:0});}}
   const fc=tcol.map(v=>Math.round(v*255)).join(',');
-  for(let i=flyers.length-1;i>=0;i--){const F=flyers[i];F.age+=dt*k;if(F.age>10){flyers.splice(i,1);continue;}
-   const z=2+(1.05-2)*F.age/10;F.ang+=F.spin*dt*k;const fade=Math.min(1,F.age/1.5)*Math.min(1,(10-F.age)/2);
+  for(let i=flyers.length-1;i>=0;i--){const F=flyers[i];F.age+=adt*k;if(F.age>10){flyers.splice(i,1);continue;}
+   const z=2+(1.05-2)*F.age/10;F.ang+=F.spin*adt*k;const fade=Math.min(1,F.age/1.5)*Math.min(1,(10-F.age)/2);
    const rr=(.35/z)*H*.55;let x=cx+Math.cos(F.ang)*rr;const y=cy+Math.sin(F.ang)*rr*.9;
    ctx.font=F.kind==='s'?`italic 400 ${14*dpr/z*1.1}px "IBM Plex Sans", system-ui, sans-serif`:F.kind==='n'?`500 ${14*dpr/z*1.1}px "IBM Plex Sans", system-ui, sans-serif`:`400 ${13*dpr/z*1.1}px "Space Mono", monospace`;const half=ctx.measureText(F.text).width/2,pad=10*dpr;
    x=Math.max(half+pad,Math.min(o.width-half-pad,x));ctx.fillStyle=`rgba(${fc},${.75*fade})`;ctx.fillText(F.text,x,y);}
@@ -684,12 +692,12 @@ function frame(now){
 function drawOverviewCursor(){drawStrip($('s1'),0,L,false);}
 function drawRamp(){const cv=$('ramp'),dpr=devicePixelRatio||1,W=cv.clientWidth||300,H=cv.clientHeight||28;cv.width=W*dpr;cv.height=H*dpr;const c=cv.getContext('2d');
  for(let x=0;x<cv.width;x++){const [l,cc,h]=rampLCH(x/(cv.width-1));c.fillStyle=css(oklch(l,cc,h));c.fillRect(x,0,1,cv.height);}}
-function loadCols(){let s=null;try{s=JSON.parse(localStorage.getItem('ttsim-col-'+DECK)||'null');}catch(e){}
+function loadCols(){let s=null;try{s=JSON.parse(localStorage.getItem('ttsim-line-'+DECK)||'null');}catch(e){}
  s=s||COLDEF;setCols(s.a,s.b,s.arc||'short');$('colA').value=COL.a;$('colB').value=COL.b;$('arc').value=COL.arc;}
-function applyCols(save){setCols($('colA').value,$('colB').value,$('arc').value);if(save)try{localStorage.setItem('ttsim-col-'+DECK,JSON.stringify(COL));}catch(e){}
+function applyCols(save){setCols($('colA').value,$('colB').value,$('arc').value);if(save)try{localStorage.setItem('ttsim-line-'+DECK,JSON.stringify(COL));}catch(e){}
  buildPlates();drawRamp();drawOverview();}
 ['colA','colB','arc'].forEach(id=>$(id).addEventListener('input',()=>applyCols(true)));
-$('colReset').onclick=()=>{try{localStorage.removeItem('ttsim-col-'+DECK);}catch(e){}loadCols();applyCols(false);};
+$('colReset').onclick=()=>{try{localStorage.removeItem('ttsim-line-'+DECK);}catch(e){}loadCols();applyCols(false);};
 function applyRoute(){const kind=$('route').value;$('routeKm').disabled=kind==='tt';
  let len=Math.round(+$('routeKm').value);if(kind==='tt'){len=186;$('routeKm').value=186;}
  if(!(len>=1&&len<=1000)){$('perr').textContent='Route length must be between 1 and 1000 km.';return;}
@@ -715,7 +723,7 @@ function setDeck(key){const d=DECKS[key]||DECKS.universe;DECK=DECKS[key]?key:'un
  EV=d.events;N=EV.length;SPAN=d.span;FORMULAS=d.formulas;NAMES=d.names||[];lastTexts=[];DECK=DECKS[key]?key:'universe';loadCols();$('scanout').innerHTML='';$('scanmsg').textContent='';buildPlates();buildMil();drawRamp();
  playing=false;$('play').textContent='Play';ST=null;step=0;simT=0;resetFlyers();
  $('deck').value=DECK;
- $('eyebrow').textContent='The Original Time Machine · '+d.name+' · '+N+' events · trip simulator v4.1 · ledger §O · '+d.texts;
+ $('eyebrow').textContent='The Original Time Machine · '+d.name+' · '+N+' events · trip simulator v4.2 · ledger §O · '+d.texts;
  $('deckname').textContent=d.name.replace(' ENG','');
  try{localStorage.setItem('ttsim-deck',DECK);}catch(e){}
  recompute();}
@@ -724,12 +732,12 @@ $('deck').addEventListener('change',e=>setDeck(e.target.value));
 const PUBLIC_URL='https://ottsme.github.io/time_machine/simulator/';
 const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
 const NUM=['pFIZ','pEZ','pFOZ','pFloor','pDiss','routeKm'],CHK=['tm','fx','cue','pHold'],SEL=['rate','zoom','route'];
-function getState(){const st={v:1,deck:DECK,num:{},chk:{},sel:{},cols:{}};
+function getState(){const st={v:2,deck:DECK,num:{},chk:{},sel:{},lines:{}};
  NUM.forEach(id=>st.num[id]=$(id).value);CHK.forEach(id=>st.chk[id]=$(id).checked);SEL.forEach(id=>st.sel[id]=$(id).value);
- for(const k in DECKS){let c=null;try{c=JSON.parse(LS.get('ttsim-col-'+k)||'null');}catch(e){}if(c)st.cols[k]=c;}
- st.cols[DECK]={...COL};return st;}
+ for(const k in DECKS){let c=null;try{c=JSON.parse(LS.get('ttsim-line-'+k)||'null');}catch(e){}if(c)st.lines[k]=c;}
+ st.lines[DECK]={...COL};return st;}
 function applyState(st){if(!st||typeof st!=='object')return false;
- for(const k in DECKS){LS.del('ttsim-col-'+k);if(st.cols&&st.cols[k])LS.set('ttsim-col-'+k,JSON.stringify(st.cols[k]));}
+ for(const k in DECKS){LS.del('ttsim-line-'+k);if(st.lines&&st.lines[k])LS.set('ttsim-line-'+k,JSON.stringify(st.lines[k]));}
  for(const id of NUM)if(st.num&&st.num[id]!=null)$(id).value=st.num[id];
  for(const id of CHK)if(st.chk&&st.chk[id]!=null)$(id).checked=!!st.chk[id];
  for(const id of SEL)if(st.sel&&st.sel[id]!=null&&[...$(id).options].some(o=>o.value===st.sel[id]))$(id).value=st.sel[id];
@@ -753,7 +761,7 @@ $('cfgLink').onclick=async()=>{const url=PUBLIC_URL+'#c='+enc(getState());$('cfg
 let DEFAULT_STATE=null;
 $('cfgReset').onclick=()=>{applyState(DEFAULT_STATE);LS.del('ttsim-state');msg('Back to defaults. Saved setups are kept.');};
 // start: the defaults are captured first; then a setup link wins over the autosaved state
-setDeck('universe');DEFAULT_STATE=getState();for(const k in DECKS)DEFAULT_STATE.cols[k]={...COLDEF};
+setDeck('universe');DEFAULT_STATE=getState();for(const k in DECKS)DEFAULT_STATE.lines[k]={...COLDEF};
 listSetups();
 {let st=null,from='';const m=location.hash.match(/[#&]c=([A-Za-z0-9_-]+)/);
  if(m){try{st=dec(m[1]);from='link';}catch(e){msg('That setup link could not be read.');}}
@@ -765,7 +773,7 @@ requestAnimationFrame(frame);
 </script>
 
 
-<p style="max-width:1100px;margin:0 auto;padding:0 16px 32px;font:12px 'Space Mono',monospace;color:#8d93a8">Build v4.1 · 2026-10-12</p>
+<p style="max-width:1100px;margin:0 auto;padding:0 16px 32px;font:12px 'Space Mono',monospace;color:#8d93a8">Build v4.2 · 2026-10-12</p>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));</script>
 </body>
 </html>
