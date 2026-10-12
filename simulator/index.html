@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="sim-version" content="v4 · 2026-10-12">
+<meta name="sim-version" content="v4.1 · 2026-10-12">
 <style>html,body{margin:0;background:#07080d}*,*::before,*::after{box-sizing:border-box}</style>
 </head>
 <body>
@@ -154,6 +154,15 @@ th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:upp
 </div>
 <canvas id="ramp" style="width:100%;height:28px;border-radius:6px;border:1px solid var(--line);display:block"></canvas>
 <p style="font-size:13px;color:var(--muted)">The simulator blends from the start colour to the end colour along the road (in OKLCH, so the steps look even), using the start and end lightness too. The tunnel lines take the same hue, brighter. Between two hues there are two ways round the colour wheel; the other way passes through the opposite colours. Saved per deck in this browser.</p>
+</div>
+
+<div class="card">
+<h2>Saved settings</h2>
+<p style="font-size:13px;color:var(--muted)">Everything you change is kept automatically in this browser on this device. Name a setup to keep several side by side. <em>Copy link</em> packs the whole setup into a link: open it on another device, or paste it to Claude.</p>
+<div class="row"><input type="text" id="cfgName" placeholder="Name this setup" aria-label="Setup name" style="flex:1;min-width:140px;font:500 14px var(--body);color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px"><button id="cfgSave">Save</button></div>
+<div class="row"><select id="cfgList" aria-label="Saved setups" style="flex:1;min-width:140px"></select><button id="cfgLoad">Load</button><button id="cfgDel">Delete</button></div>
+<div class="row"><button id="cfgLink">Copy link</button><button id="cfgReset">Reset to defaults</button><span id="cfgMsg" style="font-size:13px;color:var(--muted)"></span></div>
+<input type="text" id="cfgOut" readonly aria-label="Setup link" hidden style="width:100%;font:12px var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px">
 </div>
 
 <div class="card">
@@ -706,18 +715,57 @@ function setDeck(key){const d=DECKS[key]||DECKS.universe;DECK=DECKS[key]?key:'un
  EV=d.events;N=EV.length;SPAN=d.span;FORMULAS=d.formulas;NAMES=d.names||[];lastTexts=[];DECK=DECKS[key]?key:'universe';loadCols();$('scanout').innerHTML='';$('scanmsg').textContent='';buildPlates();buildMil();drawRamp();
  playing=false;$('play').textContent='Play';ST=null;step=0;simT=0;resetFlyers();
  $('deck').value=DECK;
- $('eyebrow').textContent='The Original Time Machine · '+d.name+' · '+N+' events · trip simulator v4 · ledger §O · '+d.texts;
+ $('eyebrow').textContent='The Original Time Machine · '+d.name+' · '+N+' events · trip simulator v4.1 · ledger §O · '+d.texts;
  $('deckname').textContent=d.name.replace(' ENG','');
  try{localStorage.setItem('ttsim-deck',DECK);}catch(e){}
  recompute();}
 $('deck').addEventListener('change',e=>setDeck(e.target.value));
-let startDeck='universe';try{startDeck=localStorage.getItem('ttsim-deck')||'universe';}catch(e){}
-setDeck(startDeck);
+/* ------------- saved settings: autosave, named setups, setup links ------------- */
+const PUBLIC_URL='https://ottsme.github.io/time_machine/simulator/';
+const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
+const NUM=['pFIZ','pEZ','pFOZ','pFloor','pDiss','routeKm'],CHK=['tm','fx','cue','pHold'],SEL=['rate','zoom','route'];
+function getState(){const st={v:1,deck:DECK,num:{},chk:{},sel:{},cols:{}};
+ NUM.forEach(id=>st.num[id]=$(id).value);CHK.forEach(id=>st.chk[id]=$(id).checked);SEL.forEach(id=>st.sel[id]=$(id).value);
+ for(const k in DECKS){let c=null;try{c=JSON.parse(LS.get('ttsim-col-'+k)||'null');}catch(e){}if(c)st.cols[k]=c;}
+ st.cols[DECK]={...COL};return st;}
+function applyState(st){if(!st||typeof st!=='object')return false;
+ for(const k in DECKS){LS.del('ttsim-col-'+k);if(st.cols&&st.cols[k])LS.set('ttsim-col-'+k,JSON.stringify(st.cols[k]));}
+ for(const id of NUM)if(st.num&&st.num[id]!=null)$(id).value=st.num[id];
+ for(const id of CHK)if(st.chk&&st.chk[id]!=null)$(id).checked=!!st.chk[id];
+ for(const id of SEL)if(st.sel&&st.sel[id]!=null&&[...$(id).options].some(o=>o.value===st.sel[id]))$(id).value=st.sel[id];
+ setDeck(DECKS[st.deck]?st.deck:'universe');applyRoute();return true;}
+let saveT;function autosave(){clearTimeout(saveT);saveT=setTimeout(()=>LS.set('ttsim-state',JSON.stringify(getState())),300);}
+document.addEventListener('change',e=>{if(!e.target.closest('#cfgName,#cfgList,#cfgOut'))autosave();});
+document.addEventListener('input',e=>{if(!e.target.closest('#cfgName,#cfgList,#cfgOut'))autosave();});
+const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const dec=t=>JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))));
+function setups(){try{return JSON.parse(LS.get('ttsim-setups')||'{}');}catch(e){return {};}}
+function listSetups(sel){const s=setups(),names=Object.keys(s).sort((a,b)=>a.localeCompare(b));
+ $('cfgList').innerHTML=names.length?names.map(n=>`<option>${n.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</option>`).join(''):'<option value="">No saved setups yet</option>';
+ if(sel&&names.includes(sel))$('cfgList').value=sel;}
+const msg=t=>{$('cfgMsg').textContent=t;};
+$('cfgSave').onclick=()=>{const n=$('cfgName').value.trim();if(!n){msg('Give the setup a name first.');return;}
+ const s=setups(),had=n in s;s[n]=getState();msg(LS.set('ttsim-setups',JSON.stringify(s))?(had?'Replaced “'+n+'”.':'Saved “'+n+'”.'):'This browser does not allow saving.');listSetups(n);};
+$('cfgLoad').onclick=()=>{const n=$('cfgList').value,s=setups();if(!s[n]){msg('Nothing to load.');return;}applyState(s[n]);autosave();$('cfgName').value=n;msg('Loaded “'+n+'”.');};
+$('cfgDel').onclick=()=>{const n=$('cfgList').value,s=setups();if(!s[n])return;delete s[n];LS.set('ttsim-setups',JSON.stringify(s));listSetups();msg('Deleted “'+n+'”.');};
+$('cfgLink').onclick=async()=>{const url=PUBLIC_URL+'#c='+enc(getState());$('cfgOut').hidden=false;$('cfgOut').value=url;$('cfgOut').select();
+ try{await navigator.clipboard.writeText(url);msg('Link copied.');}catch(e){msg('Copy the link below.');}};
+let DEFAULT_STATE=null;
+$('cfgReset').onclick=()=>{applyState(DEFAULT_STATE);LS.del('ttsim-state');msg('Back to defaults. Saved setups are kept.');};
+// start: the defaults are captured first; then a setup link wins over the autosaved state
+setDeck('universe');DEFAULT_STATE=getState();for(const k in DECKS)DEFAULT_STATE.cols[k]={...COLDEF};
+listSetups();
+{let st=null,from='';const m=location.hash.match(/[#&]c=([A-Za-z0-9_-]+)/);
+ if(m){try{st=dec(m[1]);from='link';}catch(e){msg('That setup link could not be read.');}}
+ if(!st){try{st=JSON.parse(LS.get('ttsim-state')||'null');}catch(e){}}
+ if(!st){const d=LS.get('ttsim-deck');if(d&&DECKS[d])st={...DEFAULT_STATE,deck:d};}
+ if(st)applyState(st);
+ if(from==='link'){autosave();msg('Setup opened from a link.');try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}}
 requestAnimationFrame(frame);
 </script>
 
 
-<p style="max-width:1100px;margin:0 auto;padding:0 16px 32px;font:12px 'Space Mono',monospace;color:#8d93a8">Build v4 · 2026-10-12</p>
+<p style="max-width:1100px;margin:0 auto;padding:0 16px 32px;font:12px 'Space Mono',monospace;color:#8d93a8">Build v4.1 · 2026-10-12</p>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));</script>
 </body>
 </html>
