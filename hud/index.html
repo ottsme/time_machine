@@ -111,7 +111,7 @@ canvas.on{opacity:1}
 <div class="wrap">
 <div id="stage">
  <img class="pic" id="picDino" src="img/dino.jpg" alt="Sauropods in a Mesozoic forest">
- <img class="pic contain" id="picSun" src="img/sun.jpg" alt="The Methuselah star">
+ <img class="pic" id="picEarth" src="img/earth.jpg" alt="The Earth from space">
  <canvas id="gl"></canvas>
  <canvas id="ov"></canvas>
  <div id="map">Map view — not part of this mockup</div>
@@ -140,7 +140,7 @@ canvas.on{opacity:1}
  <select id="scene">
   <option value="tunnel">Filler · tunnel (live)</option>
   <option value="dino">Event · The age of dinosaurs</option>
-  <option value="meth">Event · The Methuselah star (dark)</option>
+  <option value="earth">Event · Modern Earth (dark)</option>
   <option value="long">Event · long heading test</option>
  </select>
  <label for="glass">Glass opacity <span id="vglass"></span></label><input id="glass" type="range" min="0" max="0.9" step="0.02">
@@ -166,9 +166,9 @@ const root=document.documentElement;
 const SCENES={
  dino:{pic:'picDino',h:'The age of dinosaurs.',d:['144.1','Ma'],trip:.989557,next:.38,
   text:"Dinosaurs are the large animals of the world, and have been for a long time already. Long-necked plant-eaters the length of a tennis court, armoured ones built like tanks, hunters of every size. Flowering plants are only starting to appear; most of the green is conifer, fern and cycad. The number worth holding on to is not how big they were. It is how long this lasts. Their world has been running for eighty million years, and it has almost as long again to run. Everything that comes after it — every whale, every grassland, every monkey, every human — gets less than half of that. There are mammals in this world. But they are the size of rats and they come out at night. Not exactly their world. For a hundred and sixty million years, this is simply how the Earth is."},
- meth:{pic:'picSun',h:'The Methuselah star.',d:['13.25','Ga'],trip:.039785,next:.55,
-  text:"Matter clumps unevenly, and in the denser knots stars go on forming. One of them still burns today: catalogued HD 140283 and nicknamed Methuselah for its age, out in the constellation of Libra, and genuinely ancient — one of the oldest stars we can actually point a telescope at. We know because it is almost pure hydrogen and helium, with barely a trace of iron. It was built before there was much iron in the Universe to build from. So old, in fact, that its first measured age came out slightly older than the Universe itself, which caused some embarrassment until the numbers were refined. It sits about two hundred light years away, and a decent pair of binoculars will show it to you."},
- long:{pic:'picSun',h:"The Milky Way's last great collision.",d:['10','Ga'],trip:.27531,next:.2,text:null},
+ earth:{pic:'picEarth',h:'Modern Earth.',d:['23','Ma'],trip:.998333,next:.45,
+  text:"The continents reach nearly their present places and grasslands spread through the drying interiors. Antarctica has lain under ice for ten million years already; the Arctic will not freeze for another twenty. The world is starting to look like home."},
+ long:{pic:'picEarth',h:"The Milky Way's last great collision.",d:['10','Ga'],trip:.27531,next:.2,text:null},
  tunnel:{pic:null}
 };
 
@@ -206,7 +206,7 @@ function layoutCard(){const s=$('stage').getBoundingClientRect(),h=$('hud').getB
 /* ---------- scene + mode ---------- */
 let scene='tunnel',mode='image';
 function setScene(k){scene=k;const S=SCENES[k];
- for(const id of ['picDino','picSun'])$(id).classList.toggle('on',S.pic===id);
+ for(const id of ['picDino','picEarth'])$(id).classList.toggle('on',S.pic===id);
  $('gl').classList.toggle('on',k==='tunnel');$('ov').classList.toggle('on',k==='tunnel');
  const t=$('title');
  if(k==='tunnel'){t.className='deck';t.textContent='History of the Universe';}
