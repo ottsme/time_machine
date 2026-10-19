@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070a">
+<title>Time Machine HUD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Literata:opsz,wght@7..72,400&family=IBM+Plex+Sans:ital,wght@0,500;1,400&display=swap">
+<style>
+/* ---------- design tokens (the tune panel writes these) ---------- */
+:root{
+ --glass:.38;          /* panel tint opacity */
+ --blur:18px;          /* backdrop blur */
+ --sat:140%;           /* backdrop saturation */
+ --accent:#c41a1a;     /* next-event bar */
+ --trip:#e9eef3;       /* trip bar */
+ --title:19px;         /* heading size */
+ --top:12px;           /* gap above the top panel (plus the safe area) */
+ --inset:10px;         /* side gap of both panels */
+ --radius:14px;        /* panel corner radius */
+ --bar:3px;            /* progress bar thickness */
+ --solid:rgba(20,24,30,.9);
+ --ink:#f4f6f8;
+ --muted:#aeb7c1;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#05070a;color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+/* ---------- layout: phone = full screen, desktop = phone frame + tune panel ---------- */
+.wrap{height:100%;display:flex}
+#stage{position:relative;overflow:hidden;width:100vw;height:100vh;height:100dvh;background:#000}
+@media (min-width:900px){
+ body{background:#14171c}
+ .wrap{align-items:center;justify-content:center;gap:40px;padding:24px}
+ #stage{width:390px;height:844px;flex:none;border-radius:44px;box-shadow:0 0 0 10px #050608,0 0 0 11px #2a2e35,0 30px 80px rgba(0,0,0,.6)}
+ :root{--top:44px}
+}
+
+/* ---------- the picture layers ---------- */
+.pic{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s ease}
+.pic.on{opacity:1}
+.pic.contain{object-fit:contain}
+canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .6s ease}
+canvas.on{opacity:1}
+
+/* ---------- glass ---------- */
+.glass{background:rgba(8,11,16,var(--glass));border:1px solid rgba(255,255,255,.12);
+ -webkit-backdrop-filter:blur(var(--blur)) saturate(var(--sat));backdrop-filter:blur(var(--blur)) saturate(var(--sat))}
+
+/* ---------- top panel ---------- */
+#hud{position:absolute;left:var(--inset);right:var(--inset);top:calc(env(safe-area-inset-top) + var(--top));
+ padding:11px 14px 12px;border-radius:var(--radius);display:flex;flex-direction:column;gap:9px;z-index:5}
+.row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+#title{font-size:var(--title);font-weight:600;letter-spacing:-.01em;line-height:1.2;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#title.small{font-size:calc(var(--title) * .84)}
+#title.wrap2{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#title.deck{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+#date{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums;align-self:flex-start;padding-top:2px}
+#date small{font-size:11px;opacity:.75;margin-left:3px}
+.bars{display:flex;flex-direction:column;gap:4px}
+.bar{height:var(--bar);border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:2px;width:0}
+#tripBar i{background:var(--trip)}
+#nextBar{background:rgba(255,255,255,.09)}
+#nextBar i{background:var(--accent)}
+
+/* ---------- text card ---------- */
+#card{position:absolute;left:var(--inset);right:var(--inset);border-radius:var(--radius);background:rgba(10,13,18,.93);
+ border:1px solid rgba(255,255,255,.08);padding:20px 20px 24px;overflow:auto;z-index:4;opacity:0;pointer-events:none;transition:opacity .3s}
+#card.on{opacity:1;pointer-events:auto}
+#card p{margin:0;font-family:'Literata',Georgia,serif;font-size:16.5px;line-height:1.6;color:#e8ebef}
+#card p.note{font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--muted)}
+
+/* ---------- map placeholder ---------- */
+#map{position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;transition:opacity .3s;
+ background:#1b1f24 repeating-linear-gradient(35deg,transparent 0 46px,rgba(255,255,255,.035) 46px 48px);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
+#map.on{opacity:1}
+
+/* ---------- dock ---------- */
+#dock{position:absolute;left:var(--inset);right:var(--inset);bottom:calc(env(safe-area-inset-bottom) + 22px);padding:8px;border-radius:calc(var(--radius) + 8px);
+ display:flex;align-items:center;gap:8px;z-index:5}
+.btn{width:44px;height:44px;flex:none;border-radius:14px;display:flex;align-items:center;justify-content:center;padding:0;border:none}
+#stop{background:var(--solid);border:1px solid rgba(255,255,255,.14);color:var(--ink)}
+#pause{background:var(--ink);color:#0b0e12}
+.seg{flex:1;height:44px;border-radius:14px;background:var(--solid);border:1px solid rgba(255,255,255,.10);padding:3px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
+.seg button{border:none;border-radius:11px;background:transparent;color:#c9d0d8;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px;padding:0;transition:background .2s,color .2s}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#0b0e12;font-weight:600}
+
+/* ---------- tune panel ---------- */
+#tune{width:320px;flex:none;background:#1c2026;border:1px solid #2c3139;border-radius:16px;padding:18px;font-size:13px;color:#d6dbe1;max-height:844px;overflow:auto}
+#tune h2{margin:0 0 4px;font-size:15px;font-weight:600;color:#fff}
+#tune .hint{margin:0 0 14px;color:#8f99a4;font-size:12px;line-height:1.45}
+#tune label{display:block;margin:12px 0 4px;color:#aeb7c1}
+#tune label span{float:right;font-family:'JetBrains Mono',monospace;color:#fff}
+#tune input[type=range]{width:100%;accent-color:#c41a1a}
+#tune select,#tune input[type=color]{width:100%;height:34px;background:#12151a;color:#fff;border:1px solid #333a43;border-radius:8px;padding:0 8px;font:inherit}
+#tune input[type=color]{padding:2px}
+.tb{display:flex;gap:8px;margin-top:16px}
+.tb button{flex:1;height:36px;border-radius:8px;border:1px solid #3a414b;background:#262b33;color:#fff;font-size:13px}
+#out{width:100%;height:120px;margin-top:10px;background:#12151a;color:#cfe3ef;border:1px solid #333a43;border-radius:8px;font:11px/1.4 'JetBrains Mono',monospace;padding:8px;display:none}
+@media (max-width:899px){
+ #tune{position:fixed;left:8px;right:8px;bottom:8px;width:auto;max-height:62vh;z-index:20;transform:translateY(110%);transition:transform .3s;box-shadow:0 -10px 40px rgba(0,0,0,.6)}
+ #tune.open{transform:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="stage">
+ <img class="pic" id="picDino" src="img/dino.jpg" alt="Sauropods in a Mesozoic forest">
+ <img class="pic contain" id="picSun" src="img/sun.jpg" alt="The Methuselah star">
+ <canvas id="gl"></canvas>
+ <canvas id="ov"></canvas>
+ <div id="map">Map view — not part of this mockup</div>
+ <div id="card"><p id="cardText"></p></div>
+
+ <header id="hud" class="glass">
+  <div class="row"><div id="title"></div><div id="date"></div></div>
+  <div class="bars"><div class="bar" id="tripBar"><i></i></div><div class="bar" id="nextBar"><i></i></div></div>
+ </header>
+
+ <nav id="dock" class="glass">
+  <button class="btn" id="stop" aria-label="Stop trip"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" fill="currentColor"/></svg></button>
+  <button class="btn" id="pause" aria-label="Pause"><svg id="pauseIco" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="9.5" y="2" width="3.5" height="12" rx="1" fill="currentColor"/></svg></button>
+  <div class="seg" role="group" aria-label="View">
+   <button data-mode="map" aria-pressed="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>Map</button>
+   <button data-mode="text" aria-pressed="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Text</button>
+   <button data-mode="image" aria-pressed="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>Image</button>
+  </div>
+ </nav>
+</div>
+
+<aside id="tune" aria-label="Tuning">
+ <h2>Tune</h2>
+ <p class="hint">On a phone, tap the top panel to open or close this. Values are kept on this device. "Copy values" gives the numbers for Sven.</p>
+ <label for="scene">Scene</label>
+ <select id="scene">
+  <option value="tunnel">Filler · tunnel (live)</option>
+  <option value="dino">Event · The age of dinosaurs</option>
+  <option value="meth">Event · The Methuselah star (dark)</option>
+  <option value="long">Event · long heading test</option>
+ </select>
+ <label for="glass">Glass opacity <span id="vglass"></span></label><input id="glass" type="range" min="0" max="0.9" step="0.02">
+ <label for="blur">Blur <span id="vblur"></span></label><input id="blur" type="range" min="0" max="40" step="1">
+ <label for="sat">Saturation behind glass <span id="vsat"></span></label><input id="sat" type="range" min="100" max="200" step="5">
+ <label for="title_">Heading size <span id="vtitle_"></span></label><input id="title_" type="range" min="14" max="26" step="0.5">
+ <label for="bar">Bar thickness <span id="vbar"></span></label><input id="bar" type="range" min="1" max="6" step="0.5">
+ <label for="inset">Side gap <span id="vinset"></span></label><input id="inset" type="range" min="0" max="24" step="1">
+ <label for="radius">Corner radius <span id="vradius"></span></label><input id="radius" type="range" min="0" max="28" step="1">
+ <label for="top">Gap above top panel <span id="vtop"></span></label><input id="top" type="range" min="0" max="60" step="1">
+ <label for="accent">Next-event bar colour</label><input id="accent" type="color">
+ <label for="speed">Tunnel speed <span id="vspeed"></span></label><input id="speed" type="range" min="0.2" max="2" step="0.1">
+ <div class="tb"><button id="reset">Reset</button><button id="copy">Copy values</button></div>
+ <textarea id="out" readonly aria-label="Current values"></textarea>
+</aside>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const root=document.documentElement;
+
+/* ---------- scenes (texts from the master file, Universe ENG) ---------- */
+const SCENES={
+ dino:{pic:'picDino',h:'The age of dinosaurs.',d:['144.1','Ma'],trip:.989557,next:.38,
+  text:"Dinosaurs are the large animals of the world, and have been for a long time already. Long-necked plant-eaters the length of a tennis court, armoured ones built like tanks, hunters of every size. Flowering plants are only starting to appear; most of the green is conifer, fern and cycad. The number worth holding on to is not how big they were. It is how long this lasts. Their world has been running for eighty million years, and it has almost as long again to run. Everything that comes after it — every whale, every grassland, every monkey, every human — gets less than half of that. There are mammals in this world. But they are the size of rats and they come out at night. Not exactly their world. For a hundred and sixty million years, this is simply how the Earth is."},
+ meth:{pic:'picSun',h:'The Methuselah star.',d:['13.25','Ga'],trip:.039785,next:.55,
+  text:"Matter clumps unevenly, and in the denser knots stars go on forming. One of them still burns today: catalogued HD 140283 and nicknamed Methuselah for its age, out in the constellation of Libra, and genuinely ancient — one of the oldest stars we can actually point a telescope at. We know because it is almost pure hydrogen and helium, with barely a trace of iron. It was built before there was much iron in the Universe to build from. So old, in fact, that its first measured age came out slightly older than the Universe itself, which caused some embarrassment until the numbers were refined. It sits about two hundred light years away, and a decent pair of binoculars will show it to you."},
+ long:{pic:'picSun',h:"The Milky Way's last great collision.",d:['10','Ga'],trip:.27531,next:.2,text:null},
+ tunnel:{pic:null}
+};
+
+/* ---------- tokens ---------- */
+const DEF={glass:.38,blur:18,sat:140,title_:19,bar:3,inset:10,radius:14,top:null,accent:'#c41a1a',speed:1};
+const desk=matchMedia('(min-width:900px)').matches;
+DEF.top=desk?44:12;
+let V={...DEF};
+try{Object.assign(V,JSON.parse(localStorage.getItem('tm-hud')||'{}'));}catch(e){}
+const unit={glass:'',blur:'px',sat:'%',title_:'px',bar:'px',inset:'px',radius:'px',top:'px',speed:'×'};
+function apply(save){
+ root.style.setProperty('--glass',V.glass);root.style.setProperty('--blur',V.blur+'px');root.style.setProperty('--sat',V.sat+'%');
+ root.style.setProperty('--title',V.title_+'px');root.style.setProperty('--bar',V.bar+'px');root.style.setProperty('--inset',V.inset+'px');
+ root.style.setProperty('--radius',V.radius+'px');root.style.setProperty('--top',V.top+'px');root.style.setProperty('--accent',V.accent);
+ for(const k in unit){$(k).value=V[k];$('v'+k).textContent=V[k]+unit[k];}
+ $('accent').value=V.accent;
+ if(save)try{localStorage.setItem('tm-hud',JSON.stringify(V));}catch(e){}
+ layoutCard();fitTitle();}
+for(const k in unit)$(k).addEventListener('input',e=>{V[k]=+e.target.value;apply(true);});
+$('accent').addEventListener('input',e=>{V.accent=e.target.value;apply(true);});
+$('reset').onclick=()=>{V={...DEF};try{localStorage.removeItem('tm-hud');}catch(e){}apply(false);};
+$('copy').onclick=()=>{const t=JSON.stringify({panelTintOpacity:V.glass,blurPx:V.blur,saturationPct:V.sat,headingPx:V.title_,barPx:V.bar,sideGapPx:V.inset,radiusPx:V.radius,topGapPx:V.top,nextEventBar:V.accent,tripBar:'#e9eef3',panelTint:'rgb(8,11,16)',panelBorder:'rgba(255,255,255,0.12)',solidControl:'rgba(20,24,30,0.9)',textCard:'rgba(10,13,18,0.93)'},null,1);
+ $('out').style.display='block';$('out').value=t;try{navigator.clipboard.writeText(t);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy values',1500);}catch(e){}};
+$('hud').addEventListener('click',()=>$('tune').classList.toggle('open'));
+
+/* ---------- heading fit: full size, then one step smaller, then two lines ---------- */
+function fitTitle(){const t=$('title');if(t.classList.contains('deck'))return;t.classList.remove('small','wrap2');
+ if(t.scrollWidth>t.clientWidth+1){t.classList.add('small');if(t.scrollWidth>t.clientWidth+1)t.classList.add('wrap2');}}
+addEventListener('resize',()=>{layoutCard();fitTitle();});
+
+/* ---------- text card sits between the two panels ---------- */
+function layoutCard(){const s=$('stage').getBoundingClientRect(),h=$('hud').getBoundingClientRect(),d=$('dock').getBoundingClientRect();
+ $('card').style.top=(h.bottom-s.top+8)+'px';$('card').style.bottom=(s.bottom-d.top+8)+'px';}
+
+/* ---------- scene + mode ---------- */
+let scene='tunnel',mode='image';
+function setScene(k){scene=k;const S=SCENES[k];
+ for(const id of ['picDino','picSun'])$(id).classList.toggle('on',S.pic===id);
+ $('gl').classList.toggle('on',k==='tunnel');$('ov').classList.toggle('on',k==='tunnel');
+ const t=$('title');
+ if(k==='tunnel'){t.className='deck';t.textContent='History of the Universe';}
+ else{t.className='';t.textContent=S.h.replace(/\.$/,'');$('date').innerHTML=S.d[0]+'<small>'+S.d[1]+'</small>';
+  $('tripBar').firstChild.style.width=(S.trip*100)+'%';$('nextBar').firstChild.style.width=(S.next*100)+'%';}
+ $('cardText').className=S.text?'':'note';
+ $('cardText').textContent=S.text||(k==='tunnel'?'No event here: this is the stretch between two events.':'This scene only tests the heading.');
+ setMode(mode);fitTitle();try{localStorage.setItem('tm-hud-scene',k);}catch(e){}}
+function setMode(m){mode=m;document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===m));
+ $('card').classList.toggle('on',m==='text');$('map').classList.toggle('on',m==='map');layoutCard();}
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+$('scene').onchange=e=>setScene(e.target.value);
+let playing=true;
+$('pause').onclick=()=>{playing=!playing;$('pause').setAttribute('aria-label',playing?'Pause':'Play');
+ $('pauseIco').innerHTML=playing?'<rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="9.5" y="2" width="3.5" height="12" rx="1" fill="currentColor"/>':'<path d="M4 2.5v11l9.5-5.5z" fill="currentColor"/>';};
+
+/* ---------- tunnel: the simulator's shader (simulator v4.5) ---------- */
+const FS=`precision highp float;
+uniform vec2 R;uniform float T,E,F,S,W,C,P,K;uniform vec3 A,B;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+void main(){vec2 p=(gl_FragCoord.xy-.5*R)/R.y;float r0=length(p);
+float far=pow(1.-smoothstep(0.,.55,r0),2.);
+vec2 b=vec2(sin(W*.31)+.4*sin(W*.73),cos(W*.23)+.4*cos(W*.61))*.09*C;vec2 q=p-b*far;
+float r=length(q),a=atan(q.y,q.x);float z=.35*K/r+P;
+float gz=abs(fract(z)-.5),ga=abs(fract(a*12./6.2832)-.5);
+float sp=r*r/(.35*K)*R.y;float g=(smoothstep(.06/pow(K,.3),0.,gz)*(.5+.5/pow(K,.35))*smoothstep(1.5,5.,sp)+smoothstep(.05,0.,ga))*smoothstep(.04,.35,r)*smoothstep(1.4,.6,r);
+vec3 col=mix(A,B,E);float st=0.;
+for(int i=0;i<4;i++){float d=fract(float(i)*.25+T*.12);float s=mix(18.,.8,d);vec2 gg=(p-b*far*.5)*s+float(i)*7.3;
+vec2 id=floor(gg),f=fract(gg)-.5;vec2 o=vec2(h(id+1.),h(id+2.))-.5;float tw=.7+.3*sin(W*4.+h(id+3.)*40.);
+st+=smoothstep(.07,0.,length(f-o*.7))*step(.82,h(id))*d*smoothstep(1.,.85,d)*tw;}
+vec3 o=(g*col*.55+st*vec3(.95,.97,1.)+col*.12/(r*10.+1.))*F+vec3(1.,.93,.8)*S*exp(-r0*2.5);
+gl_FragColor=vec4(o,1.);}`;
+function oklch(Lc,C,h){for(let k=0;k<30;k++){const a=C*Math.cos(h*Math.PI/180),b=C*Math.sin(h*Math.PI/180);
+ const l_=Lc+.3963377774*a+.2158037573*b,m_=Lc-.1055613458*a-.0638541728*b,s_=Lc-.0894841775*a-1.2914855480*b;const l=l_**3,m=m_**3,s=s_**3;
+ const lin=[4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.7076147010*s];
+ if(lin.every(v=>v>=-1e-4&&v<=1.0001))return lin.map(v=>{v=Math.max(0,Math.min(1,v));return v<=.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-.055;});C*=.85;}return [Lc,Lc,Lc];}
+const TCOL=oklch(.62,.13,357);   // the ramp near the start of the Universe deck
+const FORMULAS=['E = mc²','H₀ ≈ 70 km/s/Mpc','v = H₀d','λ = h / p','F = Gm₁m₂ / r²','T ≈ 2.7 K','ρc = 3H² / 8πG','z = Δλ / λ','L = 4πR²σT⁴'];
+// a loop of the real stretch from The Methuselah star (13.25 Ga) to The first quasar (13.1 Ga), 186 km road
+const SPAN=13.799e9,L=186,P0=.039785492,P1=.050655845,LOOP=30;
+const MIL=[];for(let k=0,y=13.7e9;y>=13.0e9;y-=1e8,k++)MIL.push({y:Math.round(y/1e8)*1e8,km:(SPAN-y)/SPAN*L,ang:(k%2?Math.PI:0)+((k*.618)%1-.5)*.9});
+const c=$('gl'),gl=c.getContext('webgl',{alpha:false}),o=$('ov'),ctx=o.getContext('2d');let U={};
+if(gl){const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+ const sh=(ty,s)=>{const x=gl.createShader(ty);gl.shaderSource(x,s);gl.compileShader(x);return x;};
+ const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
+ gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+ const lp=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(lp);gl.vertexAttribPointer(lp,2,gl.FLOAT,false,0,0);
+ ['R','T','E','F','S','W','C','A','B','P','K'].forEach(k=>U[k]=gl.getUniformLocation(pr,k));}
+const flyers=[];let nextF=1.5,fSide=1,lastF=[];
+let simT=0,tt=0,ph=0,ww=0,kd=1,last=performance.now(),uiT=0;
+const fmtAge=a=>a>=1e9?(a/1e9).toFixed(3):(a/1e6).toFixed(0);
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;
+ if(scene==='tunnel'){
+  const sp=playing?dt*V.speed:0;simT=(simT+sp)%LOOP;const u=simT/LOOP,p=P0+(P1-P0)*u,km=p*L;
+  const kt=Math.pow(12,u*u);kd=kd+(kt-kd)*(1-Math.exp(-dt/.4));
+  tt+=sp;ph+=sp*kd;ww+=sp;
+  const dpr=Math.min(2,devicePixelRatio||1),W2=Math.round(c.clientWidth*dpr),H2=Math.round(c.clientHeight*dpr);
+  if(c.width!==W2||c.height!==H2){c.width=o.width=W2;c.height=o.height=H2;}
+  if(gl){gl.viewport(0,0,c.width,c.height);gl.uniform2f(U.R,c.width,c.height);gl.uniform1f(U.T,tt);gl.uniform1f(U.P,ph);gl.uniform1f(U.K,kd);gl.uniform1f(U.W,ww);
+   gl.uniform1f(U.E,0);gl.uniform1f(U.F,1);gl.uniform1f(U.S,0);gl.uniform1f(U.C,1);gl.uniform3fv(U.A,TCOL);gl.uniform3fv(U.B,TCOL);gl.drawArrays(gl.TRIANGLES,0,3);}
+  ctx.clearRect(0,0,o.width,o.height);const cx=o.width/2,cy=o.height/2,H=o.height;ctx.textAlign='center';ctx.textBaseline='middle';
+  // time marks, tied to the road (as in the simulator)
+  const D=(P1-P0)*L/LOOP*V.speed*4,Z0=.9,ZF=3.2;
+  for(const m of MIL){const ahead=m.km-km;if(ahead>D||ahead<-D)continue;const z=Z0+ahead/D*(ZF-Z0);if(z<.4)continue;
+   const rr=(.35/z)*H*.55,x=cx+Math.cos(m.ang)*rr,y=cy+Math.sin(m.ang)*rr*.9,a=Math.max(0,Math.min(1,(3.2-z)*1.2)*Math.min(1,(z-.4)*2.5));
+   ctx.font=`700 ${Math.max(4,15*dpr/z*1.1)}px "JetBrains Mono", monospace`;ctx.fillStyle=`rgba(235,238,250,${a*.9})`;ctx.fillText((m.y/1e9).toFixed(1)+' Ga',x,y);}
+  // formulas, at their own constant pace
+  nextF-=sp/V.speed||0;
+  if(nextF<=0){nextF=7+Math.random()*3;fSide=-fSide;let pool=FORMULAS.filter(f=>!lastF.includes(f));const f=pool[Math.floor(Math.random()*pool.length)];lastF.push(f);if(lastF.length>4)lastF.shift();
+   flyers.push({text:f,ang:(fSide<0?Math.PI:0)+(Math.random()-.5)*1.1,spin:(Math.random()<.5?-1:1)*.03,age:0});}
+  const fc=TCOL.map(v=>Math.round(v*255)).join(',');
+  for(let i=flyers.length-1;i>=0;i--){const F=flyers[i];F.age+=playing?dt:0;if(F.age>10){flyers.splice(i,1);continue;}
+   const z=2+(1.05-2)*F.age/10;F.ang+=F.spin*(playing?dt:0);const fade=Math.min(1,F.age/1.5)*Math.min(1,(10-F.age)/2),rr=(.35/z)*H*.55;
+   let x=cx+Math.cos(F.ang)*rr;const y=cy+Math.sin(F.ang)*rr*.9;ctx.font=`400 ${13*dpr/z*1.1}px "JetBrains Mono", monospace`;
+   const half=ctx.measureText(F.text).width/2,pad=10*dpr;x=Math.max(half+pad,Math.min(o.width-half-pad,x));ctx.fillStyle=`rgba(${fc},${.75*fade})`;ctx.fillText(F.text,x,y);}
+  uiT-=dt;if(uiT<=0){uiT=.1;$('date').innerHTML=fmtAge(SPAN*(1-p))+'<small>Ga</small>';
+   $('tripBar').firstChild.style.width=(p*100)+'%';$('nextBar').firstChild.style.width=(u*100)+'%';}
+ }
+ requestAnimationFrame(frame);}
+
+let s0='tunnel';try{s0=localStorage.getItem('tm-hud-scene')||'tunnel';}catch(e){}
+if(!SCENES[s0])s0='tunnel';$('scene').value=s0;
+apply(false);setScene(s0);
+document.fonts&&document.fonts.ready.then(fitTitle);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
