@@ -11,10 +11,11 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="sim-version" content="v4.5 · 2026-10-12">
+<meta name="sim-version" content="v4.6 · 2026-10-20">
 <style>html,body{margin:0;background:#07080d}*,*::before,*::after{box-sizing:border-box}</style>
 </head>
 <body>
+
 <title>Time Machine Trip Simulator</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&family=Syne:wght@600;700&display=swap">
 <style>
@@ -236,6 +237,7 @@ filler   = s − EZ − FOZ − FIZ               shorter than the floor: no fil
                                             next picture fades in over the previous
 
 voice    = (heading + space + body) / 14 chars/s, starts at its anchor   (§M.2)
+           no spoken date: the date is shown, never read                (§L.16)
 blocking = whole narration before 99%, heading only after, nothing at arrival
 
 1  blocking audio playing  → next fade-in waits
@@ -251,7 +253,7 @@ arrival  : never blocked, always fires, cuts any audio</div>
 <section>
 <p class="eyebrow">Interpretations still mine, for your ruling</p>
 <ol>
-<li><strong>Narration is heading plus body only</strong>, as in §M. If the TTS also reads the spoken date first, every narration is about two seconds longer.</li>
+<li><strong>Narration is heading plus body only.</strong> No date is spoken; the date is shown on the card only (Ott, 2026-10-20, ledger §L.16). After 99% the part that cannot be cut is the heading alone.</li>
 <li><strong>Ignition:</strong> 1.5 s of black, the first picture fades up over 3 s, narration starts at 4.5 s, and the car pulls away at 5 s.</li>
 <li><strong>No-filler gap, fade-in blocked:</strong> the earlier picture stays at full strength until the next one is complete, so the tunnel never shows through between two pictures. If the next event is skipped, the earlier picture fades out over the catch-up time. (Changed 2026-10-12: the earlier version let it fade by road, and in the dense last stretch both pictures went half-transparent over the tunnel.)</li>
 <li><strong>Tunnel colour</strong> blends between the start and end colours set under <em>Tunnel colours</em>, advancing 75% by event index and 25% by distance (§K.3). The default is the §K.3 ramp (hue 355° → 195°). Placeholder cards keep that default ramp. The physics chroma profile is not modelled.</li>
@@ -732,7 +734,7 @@ function setDeck(key){const d=DECKS[key]||DECKS.universe;DECK=DECKS[key]?key:'un
  EV=d.events;N=EV.length;SPAN=d.span;FORMULAS=d.formulas;NAMES=d.names||[];lastTexts=[];DECK=DECKS[key]?key:'universe';loadCols();$('scanout').innerHTML='';$('scanmsg').textContent='';buildPlates();buildMil();drawRamp();
  playing=false;$('play').textContent='Play';ST=null;step=0;simT=0;resetFlyers();
  $('deck').value=DECK;
- $('eyebrow').textContent='The Original Time Machine · '+d.name+' · '+N+' events · trip simulator v4.5 · ledger §O · '+d.texts;
+ $('eyebrow').textContent='The Original Time Machine · '+d.name+' · '+N+' events · trip simulator v4.6 · ledger §O · '+d.texts;
  $('deckname').textContent=d.name.replace(' ENG','');
  try{localStorage.setItem('ttsim-deck',DECK);}catch(e){}
  recompute();}
@@ -781,7 +783,8 @@ listSetups();
 requestAnimationFrame(frame);
 </script>
 
-<p style="max-width:1100px;margin:0 auto;padding:0 16px 32px;font:12px 'Space Mono',monospace;color:#8d93a8">Build v4.5 · 2026-10-12</p>
+
+<p style="max-width:1100px;margin:0 auto;padding:0 16px 32px;font:12px 'Space Mono',monospace;color:#8d93a8">Build v4.6 · 2026-10-20</p>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));</script>
 </body>
 </html>
