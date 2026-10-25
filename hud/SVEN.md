@@ -1,6 +1,8 @@
 # Glass HUD — how to build it in React Native
 
-*For Sven. Version 2, 2026-10-25 (first version 2026-10-19). Reference prototype: https://ottsme.github.io/time_machine/hud/ (code in `hud/index.html`).*
+*For Sven. Version 3, 2026-10-25 (first version 2026-10-19). Reference prototype: https://ottsme.github.io/time_machine/hud/ (code in `hud/index.html`, Map and Text modes in `hud/modes.js`).*
+
+**Changed in version 3:** the Map and Text modes are decided (Ott, 2026-10-25). See "Map mode" and "Text mode" below.
 
 **Changed in version 2:** what the top panel shows was decided after test drives (Ott, 2026-10-25). The heading leaves with its event and is replaced by the next event, and long headings scroll instead of wrapping. See "What the top panel shows" below. The look (fonts, sizes, colours, buttons) is still being tuned.
 
@@ -27,6 +29,34 @@ These rules follow the playback rulebook (`20261018_Playback_Rulebook_for_Sven.m
 - **H-9. Long text scrolls.** If the text is wider than the slot: hold still at the start (⚙ 1.5 s), slide left at a steady speed (⚙ about 45 px/s) until the end is visible, hold (⚙ 1.2 s), fade out and back in at the start, repeat. Text that fits stands still. Fade the right edge of the slot slightly so the cut-off reads as intended. Pause stops the scrolling too.
 - **H-10. Changes between states** cross-fade the text (⚙ about 0.4 s); the panel does not jump in size.
 
+## Map mode
+
+The map answers "where on the road is it?": the timeline laid on the road the traveller is driving.
+
+- **M-1. Base map:** a custom dark, muted style (Google Maps styling): roads, water, town names; no shops, restaurants or other points of interest.
+- **M-2. Route:** the road ahead is bright (the view colour, `--light`); the road already driven is darker. The same convention as navigation apps. No era colours on any timeline for now.
+- **M-3. Pins:** every event has a pin at its proportional position, past and future. Pins ahead are bright, A-cards slightly larger with a white core; passed pins are dimmer. Pins closer than a few pixels merge into a numbered cluster.
+- **M-4. Only the next A-card carries its heading** on the map. No other pin shows text, so the road ahead keeps its surprises.
+- **M-5. Tapping a passed pin** opens its card: date, heading, text, and a replay button. Tapping a pin ahead says only that it opens when you get there. A cluster opens a list of its passed events.
+- **M-6. When an event fires,** a small card slides up above the dock: thumbnail of the event picture, date, heading, a sound indicator and a thin narration progress line. It leaves when the narration ends. Tapping it opens the full card. The map is never covered for long.
+- **M-7. The car marker** is the signature red (`#9e0303`) with a white outline.
+- **M-8. Two cameras,** switched with buttons on the map:
+  - **Follow car:** heading-up, the car in the lower third, the road ahead visible. Pan and pinch work; touching the map stops following and shows a **Re-centre** button; after about 10 seconds untouched the map glides back to the car.
+  - **Whole road:** the full route on one screen, rotated so the start sits upper left and the destination lower right, on the diagonal of the free area with some room to spare. If start and destination are close (a walking loop), rotate along the route's longest dimension instead. Pan, pinch and double-tap zoom work; a button restores the full view.
+- **M-9. Compass needle:** shown whenever the map is not north-up. Tapping it turns the map north-up.
+- **M-10. The top panel and the dock** are the same as in Image mode.
+
+## Text mode
+
+The text answers "what exactly did it say?": for reading along, rereading, and travelling with the sound off.
+
+- **T-1. A logbook:** the current card is a solid card; passed cards stack above it as compact rows (date, heading). Scrolling up rereads them; tapping a row opens its text. The log ends with a **Next stop** line (heading, date) and never shows the text of anything ahead.
+- **T-2. The log follows the narration:** it scrolls itself to keep the sentence being read in view. When the traveller scrolls away, following stops and a **Back to now** button appears.
+- **T-3. Highlight by sentence:** the sentence being read is lit, sentences already read stay normal, sentences not yet read are dimmed. Sentence, not word (Ott).
+- **T-4. Timing from Google TTS:** narration is pre-generated, so the timings are fetched once at generation. Put an SSML `<mark name="s1"/>` before each sentence and request `enableTimePointing: ["SSML_MARK"]` (v1beta1 `text:synthesize`); the reply gives each mark's time in seconds. Store those times as a small file next to each audio file. Check that the chosen voice returns timepoints: the newest premium voices (Chirp 3 HD) support only part of SSML. Fallback if a card has no timings: share the audio length between sentences by character count.
+- **T-5. Background:** the tunnel, dimmed, behind the log (or a plain dark ground; still being compared).
+- **T-6. Fonts:** card text in Literata or Atkinson Hyperlegible Next (still being compared), size from the HUD values.
+
 ## Building blocks
 
 - **Layout:** one full-screen layer for the picture/tunnel; the panels are absolutely positioned Views on top, offset with `react-native-safe-area-context`. Draw under the status bar and the gesture bar. The Play Store's current target API levels force edge-to-edge on Android anyway, so this design is built for it.
@@ -37,7 +67,8 @@ These rules follow the playback rulebook (`20261018_Playback_Rulebook_for_Sven.m
   - **Fallback if blur costs too much:** no blur, a stronger tint. It still looks right; the blur is a nice-to-have.
 - **Progress bars:** two thin Views (track + fill), animated with Reanimated. Drive the fill with `transform: scaleX` from the left, not `width`, so it stays on the UI thread. A soft glow is a shadow in the bar colour.
 - **Scrolling heading (H-9):** a `Text` inside a clipping View, measured with `onTextLayout`; if wider than the View, animate `translateX` with Reanimated in the hold–slide–hold–fade sequence. Do not use a marquee library that loops continuously.
-- **Text mode:** a nearly solid card (`rgba(10,13,18,0.93)`) in a `ScrollView`, placed between the two panels. The picture stays behind it.
+- **Text mode:** a `FlatList` (or `ScrollView`) between the two panels; the current card is nearly solid (`rgba(10,13,18,0.93)`).
+- **Map mode:** `react-native-maps` with a custom dark style JSON; the route as two polylines (driven, ahead) split at the car's position; pins as markers.
 - **Dock:** five keys of one material (soft vertical gradient, thin light top edge, drop shadow). Only the symbols are coloured and softly lit: Stop red, Pause amber, Map/Text/Image one shared colour. The engaged view key, and Pause while paused, get a soft halo in their own colour. Stop needs a press-and-hold (about 0.9 s) so a bump in the road cannot end the trip. Icons from `lucide-react-native`. Coloured halos: easy on iOS (`shadowColor`); on Android draw them in Skia or with a shadow library, because `elevation` shadows cannot be coloured.
 - **Fonts:** still being chosen for legibility from the passenger seat: Barlow Semi Condensed or Atkinson Hyperlegible Next for the panel, Literata for the card text. All are open licence; bundle them with `expo-font`.
 - **Pictures:** `resizeMode="cover"`. 9:20 frames fill most phones almost exactly. The images' safe zone (subject clear of top 12% / bottom 25%) keeps subjects out from under the panels.
