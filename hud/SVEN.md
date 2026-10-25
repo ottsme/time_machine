@@ -51,10 +51,11 @@ The map answers "where on the road is it?": the timeline laid on the road the tr
 The text answers "what exactly did it say?": for reading along, rereading, and travelling with the sound off.
 
 - **T-1. A logbook:** the current card is a solid card; passed cards stack above it as compact rows (date, heading). Scrolling up rereads them; tapping a row opens its text. The log ends with a **Next stop** line (heading, date) and never shows the text of anything ahead.
-- **T-2. The log follows the narration:** it scrolls itself to keep the sentence being read in view. When the traveller scrolls away, following stops and a **Back to now** button appears.
+- **T-2. The card stands still while it is read.** The log moves only (a) when a new card arrives: one calm glide of about 1.1 s, eased in and out, to show the card's start; and (b) when the sentence being read reaches the bottom edge of a long card: one glide that brings that sentence near the top, like turning a page. Never a continuous follow (Ott: moving text is too hard to read in a car). When the traveller scrolls away, following stops and a **Back to now** button appears.
+- **T-2a. A finished card folds away slowly** (about 1.5 s; 0.7 s when the next event follows at once): its text fades, the card shrinks into a log row, and only then does the log settle. Nothing jumps. A new card fades in and rises slightly (about 0.9 s).
 - **T-3. Highlight by sentence:** the sentence being read is lit, sentences already read stay normal, sentences not yet read are dimmed. Sentence, not word (Ott).
 - **T-4. Timing from Google TTS:** narration is pre-generated, so the timings are fetched once at generation. Put an SSML `<mark name="s1"/>` before each sentence and request `enableTimePointing: ["SSML_MARK"]` (v1beta1 `text:synthesize`); the reply gives each mark's time in seconds. Store those times as a small file next to each audio file. Check that the chosen voice returns timepoints: the newest premium voices (Chirp 3 HD) support only part of SSML. Fallback if a card has no timings: share the audio length between sentences by character count.
-- **T-5. Background:** the tunnel, dimmed, behind the log (or a plain dark ground; still being compared).
+- **T-5. Background:** the tunnel behind the log, strongly muted: about 10% brightness and 30% speed, so its motion does not pull the eye (tunable; a plain dark ground is the alternative).
 - **T-6. Fonts:** card text in Literata or Atkinson Hyperlegible Next (still being compared), size from the HUD values.
 
 ## Building blocks

@@ -137,7 +137,7 @@ canvas.on{opacity:1}
 .lrow .rh{font-family:var(--hudFont);font-size:calc(var(--title)*.72);font-weight:500;color:#c3ccd5;line-height:1.2}
 .lrow .rb{margin:8px 0 2px 92px;font-family:var(--cardFont);font-size:calc(var(--cardSize)*.86);line-height:1.55;color:#c9d1d9}
 .lrow[aria-expanded="true"]{background:rgba(10,13,18,.78)}
-.cur{background:rgba(10,13,18,.93);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:16px 18px 20px;margin:6px 0 4px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.cur{overflow:hidden;background:rgba(10,13,18,.93);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:16px 18px 20px;margin:6px 0 4px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .cur .ct{display:flex;align-items:center;gap:10px}
 .cur .cd{font-family:var(--dateFont);font-size:calc(var(--dateSize)*.8);font-weight:600;color:var(--light);font-variant-numeric:tabular-nums}
 .cur .eq{margin-left:auto}
@@ -154,7 +154,14 @@ canvas.on{opacity:1}
 #backNow svg{width:18px;height:18px;fill:none;stroke:var(--light);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .chips button{height:30px;padding:0 10px;border-radius:999px;border:1px solid #3a414b;background:#262b33;color:#dfe4ea;font-size:12.5px}
-@media (prefers-reduced-motion:reduce){.eq i{animation:none;height:10px}}
+.cur.opening{animation:cardIn .9s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.cur.closing{max-height:48px!important;padding-top:8px;padding-bottom:8px;background:transparent;border-color:transparent;box-shadow:none;
+ transition:max-height var(--fold) ease-in-out,padding var(--fold) ease-in-out,background var(--fold),border-color var(--fold),box-shadow var(--fold)}
+.cur.closing p,.cur.closing .eq{opacity:0;transition:opacity calc(var(--fold)*.5) ease}
+.cur.closing h2{font-size:calc(var(--title)*.72);font-weight:500;color:#c3ccd5;transition:font-size var(--fold),color var(--fold)}
+.cur.closing .cd{color:#7f8a96;transition:color var(--fold)}
+@media (prefers-reduced-motion:reduce){.eq i{animation:none;height:10px}.cur.opening{animation:none}}
 
 /* ---------- the console: separate keys ---------- */
 #dock{position:absolute;left:var(--inset);right:var(--inset);bottom:calc(env(safe-area-inset-bottom) + 22px);padding:8px;border-radius:calc(var(--keyR) + 8px);display:flex;align-items:center;gap:8px;z-index:5}
@@ -263,7 +270,7 @@ canvas.on{opacity:1}
 
 <aside class="panel" id="layout" aria-label="Layout">
  <div class="tabs"><button data-tab="look" aria-pressed="false">Look</button><button data-tab="layout" aria-pressed="true">Layout</button></div>
- <h2>Layout <em>v9</em></h2>
+ <h2>Layout <em>v9.1</em></h2>
  <p class="hint">On a phone, tap the top panel to open or close the tuning. Values are kept on this device. "Copy values" gives all numbers, both panels, for Sven.</p>
  <h3>Map &amp; Text drive</h3>
  <p class="hint">Map and Text run a drive through the whole Universe deck (186 km at a steady 90 km/h; Pause stops it). Image keeps the scene picker below.</p>
@@ -348,7 +355,9 @@ const C=[
  {p:'layout',s:'Map & Text'},
  {p:'layout',k:'tripSpeed',l:'Drive speed (Map & Text)',t:'select',o:[['1','Real (90 km/h)'],['10','10× faster'],['40','40× faster'],['150','150× faster']],d:'10'},
  {p:'layout',k:'cardFont',l:'Card text font',t:'select',o:[['literata','Literata'],['atkinson','Atkinson Hyperlegible Next']],d:'literata'},
- {p:'layout',k:'textBg',l:'Text mode background',t:'select',o:[['tunnel','Dimmed tunnel'],['plain','Plain']],d:'tunnel'}
+ {p:'layout',k:'textBg',l:'Text mode background',t:'select',o:[['tunnel','Dimmed tunnel'],['plain','Plain']],d:'tunnel'},
+ {p:'layout',k:'textTunnel',l:'Tunnel behind text (brightness)',t:'range',min:0,max:.4,step:.01,d:.1},
+ {p:'layout',k:'textTunnelSpeed',l:'Tunnel behind text (speed)',t:'range',min:0,max:1,step:.05,d:.3,u:'×'}
 ];
 const desk=matchMedia('(min-width:900px)').matches;
 const DEF={};for(const c of C)if(c.k)DEF[c.k]=c.d;DEF.top=desk?44:12;
@@ -390,7 +399,7 @@ const PRESETS={car:{font:'barlow',dateFont:'same',title_:28,dateSize:23,cardSize
  hand:{title_:21,dateSize:17,cardSize:17,labelSize:10.5,bar:4,key:52,labels:true}};
 $('pCar').onclick=()=>{Object.assign(V,PRESETS.car);apply(true);};$('pHand').onclick=()=>{Object.assign(V,PRESETS.hand);apply(true);};
 $('reset').onclick=()=>{V={...DEF};try{localStorage.removeItem('tm-hud');}catch(e){}apply(false);};
-$('copy').onclick=()=>{const t=JSON.stringify({version:'v9',...V},null,1);$('out').style.display='block';$('out').value=t;
+$('copy').onclick=()=>{const t=JSON.stringify({version:'v9.1',...V},null,1);$('out').style.display='block';$('out').value=t;
  try{navigator.clipboard.writeText(t);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy values',1500);}catch(e){}};
 
 /* ---------- phone: tap the top panel to open the tuning; tabs switch Look / Layout ---------- */
@@ -426,7 +435,7 @@ function setScene(k){scene=k;updLayers();if(mode==='image')scenePanel();try{loca
 // which layers show: Image = the scene; Map = the map canvas over everything; Text = the logbook over the dimmed tunnel or a plain ground
 function updLayers(){if(typeof scene==='undefined')return;const S=SCENES[scene],img=mode==='image',txt=mode==='text',tun=(img&&scene==='tunnel')||(txt&&V.textBg==='tunnel');
  for(const id of ['picDino','picEarth'])$(id).classList.toggle('on',img&&S.pic===id);
- $('gl').classList.toggle('on',tun);$('ov').classList.toggle('on',tun);$('gl').style.opacity=$('ov').style.opacity=tun&&txt?.32:'';
+ $('gl').classList.toggle('on',tun);$('ov').classList.toggle('on',tun);$('gl').style.opacity=$('ov').style.opacity=tun&&txt?V.textTunnel:'';
  $('plain').style.opacity=txt&&V.textBg==='plain'?1:0;}
 function scenePanel(){const k=scene,S=SCENES[k];
  const t=$('title');
@@ -485,7 +494,7 @@ let simT=0,tt=0,ph=0,ww=0,kd=1,last=performance.now(),uiT=0;
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;stepScroll(dt);
  if(window.Modes)Modes.frame(dt,now);
  if((mode==='image'&&scene==='tunnel')||(mode==='text'&&V.textBg==='tunnel')){
-  const sp=playing?dt*V.speed:0;simT=(simT+sp)%LOOP;const u=simT/LOOP,p=P0+(P1-P0)*u,km=p*L;
+  const sp=playing?dt*V.speed*(mode==='text'?V.textTunnelSpeed:1):0;simT=(simT+sp)%LOOP;const u=simT/LOOP,p=P0+(P1-P0)*u,km=p*L;
   const kt=Math.pow(12,u*u);kd=playing?kd+(kt-kd)*(1-Math.exp(-dt/.4)):kd;
   tt+=sp;ph+=sp*kd;ww+=sp;
   const dpr=Math.min(2,devicePixelRatio||1),W2=Math.round(c.clientWidth*dpr),H2=Math.round(c.clientHeight*dpr);
@@ -516,8 +525,8 @@ apply(false);setScene(s0);
 document.fonts&&document.fonts.ready.then(()=>{fitTitle();layoutCard();});
 document.fonts&&document.fonts.addEventListener&&document.fonts.addEventListener('loadingdone',()=>{fitTitle();layoutCard();});
 </script>
-<script src="deck_universe.js?v=9"></script>
-<script src="modes.js?v=9"></script>
+<script src="deck_universe.js?v=91"></script>
+<script src="modes.js?v=91"></script>
 <script>
 let m0='image';try{m0=localStorage.getItem('tm-hud-mode')||'image';}catch(e){}
 setMode(['map','text','image'].includes(m0)?m0:'image');requestAnimationFrame(frame);

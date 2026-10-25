@@ -172,25 +172,40 @@ function closeSheet(){$('sheet').classList.remove('on');sheetOpen=false;}
 
 /* ---------- text mode: the logbook, highlighted by sentence ---------- */
 const sentences=b=>b.split(/(?<=[.!?…]["”’)]?)\s+(?=["“‘(]?[A-Z0-9])/);
-let logKey='',follow=true,prog=false,expanded=new Set(),chunks=[],litIdx=-2,curEl=null;
-function buildLog(){const k=fired(T.p),a=activeOf(T.p),key=k+'|'+a+'|'+[...expanded].join(',')+'|'+Object.keys(TEXTS).length;if(key===logKey)return;logKey=key;let h='';
+let logKey='',follow=true,expanded=new Set(),chunks=[],litIdx=-2,curEl=null,shownA=-1,closing=false,goal=null,userT=0,tw=null;
+// the card that has ended folds away slowly; only then is the log rebuilt
+function startClose(ms){const el=curEl;closing=true;el.style.maxHeight=el.offsetHeight+'px';void el.offsetHeight;el.style.setProperty('--fold',ms+'ms');el.classList.add('closing');
+ setTimeout(()=>{closing=false;shownA=-1;logKey='';goal=null;},ms);}
+function buildLog(){if(closing)return;const k=fired(T.p),a=activeOf(T.p);
+ if(shownA>=0&&a!==shownA&&curEl&&mode==='text'){startClose(a<0?1500:700);return;}
+ const key=k+'|'+a+'|'+[...expanded].join(',')+'|'+Object.keys(TEXTS).length;if(key===logKey)return;logKey=key;let h='';
  for(let i=0;i<=k;i++){const e=EV[i],b=textOf(i);
-  if(i===a){chunks=[e.h.length+1];let body='';if(b){sentences(b).forEach((s,j)=>{chunks.push(s.length+1);body+=`<span class="s">${esc(s)}</span> `;});}
+  if(i===a){chunks=[e.h.length+1];let body='';if(b){sentences(b).forEach(s=>{chunks.push(s.length+1);body+=`<span class="s">${esc(s)}</span> `;});}
    h+=`<article class="cur" id="cur"><div class="ct"><span class="cd">${esc(e.d)}</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div><h2>${esc(e.h)}</h2>${b?`<p>${body}</p>`:`<p class="miss">Card texts are not loaded on this device. In the panel: Map &amp; Text → Load card texts.</p>`}</article>`;}
   else h+=`<button class="lrow" data-i="${i}" aria-expanded="${expanded.has(i)}"><span class="rl"><span class="rd">${esc(e.d)}</span><span class="rh">${esc(e.h)}</span></span>${expanded.has(i)?`<p class="rb">${b?esc(b):'<span class="miss">Text not loaded.</span>'}</p>`:''}</button>`;}
  const n=EV[k+1];if(n)h+=`<div class="nextRow"><small>Next stop</small><span>${esc(n.h)}, ${esc(n.d)}</span></div>`;
  $('logIn').innerHTML=h;litIdx=-2;curEl=$('cur');
+ if(curEl&&a!==shownA)curEl.classList.add('opening');shownA=a;goal=null;
  $('logIn').querySelectorAll('.lrow').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;expanded.has(i)?expanded.delete(i):expanded.add(i);follow=false;$('backNow').hidden=false;buildLog();});}
-function updLog(dt){buildLog();const lg=$('log'),a=activeOf(T.p);
- if(curEl&&a>=0){const nn=narr(a,T.p),tot=chunks.reduce((x,y)=>x+y,0),c=nn*tot;let acc=0,idx=0;while(idx<chunks.length&&acc+chunks[idx]<=c){acc+=chunks[idx];idx++;}
+function updLog(dt){buildLog();const lg=$('log'),a=activeOf(T.p),max=Math.max(0,lg.scrollHeight-lg.clientHeight);
+ if(curEl&&a>=0&&!closing){const nn=narr(a,T.p),tot=chunks.reduce((x,y)=>x+y,0),c=nn*tot;let acc=0,idx=0;while(idx<chunks.length&&acc+chunks[idx]<=c){acc+=chunks[idx];idx++;}
   const lit=nn>=1?chunks.length:idx-1;   // -1 while the heading is being read
   if(lit!==litIdx){curEl.querySelectorAll('.s').forEach((s,j)=>{s.classList.toggle('r',j<lit);s.classList.toggle('c',j===lit);});litIdx=lit;}
   curEl.querySelector('.eq').style.visibility=nn<1?'visible':'hidden';}
- if(follow){let target=lg.scrollHeight-lg.clientHeight;const cs=curEl&&curEl.querySelector('.s.c');if(cs)target=Math.min(target,Math.max(0,cs.offsetTop-lg.clientHeight*.38));
-  const d=target-lg.scrollTop;if(Math.abs(d)>.5){prog=true;lg.scrollTop+=d*(1-Math.exp(-dt*6));}}}
-$('log').addEventListener('scroll',()=>{if(prog){prog=false;return;}const lg=$('log');if(lg.scrollHeight-lg.clientHeight-lg.scrollTop>40){follow=false;$('backNow').hidden=false;}});
-['wheel','touchstart'].forEach(ev=>$('log').addEventListener(ev,()=>{prog=false;},{passive:true}));
-$('backNow').onclick=()=>{follow=true;expanded.clear();$('backNow').hidden=true;};
+ if(!follow)return;
+ if(closing){tw=null;return;}   // the card folds in place; the browser keeps the rows below it steady
+ // the card stands still while it is read; the log moves only to show a new card, or to turn the page
+ // when the sentence being read reaches the bottom edge
+ if(goal===null)goal=curEl&&curEl.offsetHeight>lg.clientHeight-16?Math.min(max,curEl.offsetTop-8):max;
+ const cs=curEl&&curEl.querySelector('.s.c');
+ if(cs){const lr=lg.getBoundingClientRect(),r=cs.getBoundingClientRect();if(!tw&&r.bottom>lr.bottom-12)goal=Math.min(max,lg.scrollTop+(r.top-lr.top)-lg.clientHeight*.12);}
+ goal=Math.min(goal,max);
+ // one calm, timed glide to the goal (ease in and out), then stillness
+ const now=performance.now();if(!tw||tw.to!==goal){if(Math.abs(goal-lg.scrollTop)>1)tw={from:lg.scrollTop,to:goal,t0:now,dur:1100};else tw=null;}
+ if(tw){const u=Math.min(1,(now-tw.t0)/tw.dur),e=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;lg.scrollTop=tw.from+(tw.to-tw.from)*e;if(u>=1)tw=null;}}
+['wheel','touchstart','pointerdown','keydown'].forEach(ev=>$('log').addEventListener(ev,()=>{userT=performance.now();},{passive:true}));
+$('log').addEventListener('scroll',()=>{if(performance.now()-userT<1500&&follow){follow=false;$('backNow').hidden=false;}});
+$('backNow').onclick=()=>{follow=true;goal=null;expanded.clear();logKey='';$('backNow').hidden=true;};
 
 /* ---------- top panel in Map and Text modes (H-1 … H-10) ---------- */
 let panelKey='';
@@ -223,7 +238,7 @@ window.Modes={
   if(mode!=='image')panel();updToast();if(mode==='text')updLog(dt);
   uiT-=dt;if(uiT<=0){uiT=.15;$('tPos').value=Math.round(T.p*100000);$('tRead').textContent=`km ${(T.p*KM).toFixed(1)} · ${fmtAge(T.p)}`;}
   saveT-=dt;if(saveT<=0){saveT=2;try{localStorage.setItem('tm-hud-trip',T.p);}catch(e){}}},
- onMode(m){panelKey='';logKey='';closeSheet();if(m==='text'){follow=true;expanded.clear();$('backNow').hidden=true;}else $('backNow').hidden=true;if(m==='map')size();},
+ onMode(m){panelKey='';logKey='';goal=null;closeSheet();if(m==='text'){follow=true;expanded.clear();$('backNow').hidden=true;}else $('backNow').hidden=true;if(m==='map')size();},
  restart(){T.p=0;follow=true;expanded.clear();}
 };
 addEventListener('resize',()=>{size();camInit=false;});
