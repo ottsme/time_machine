@@ -95,7 +95,11 @@ canvas.on{opacity:1}
 .key:active{transform:translateY(1px)}
 .key.sq{width:var(--key);flex:none}
 .glyph svg{width:calc(var(--key) * .38);height:calc(var(--key) * .38)}
-#title.deck{font-size:calc(var(--title) * .62)}
+#title.scroll{text-overflow:clip;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent)}
+#title.scroll.fits{-webkit-mask-image:none;mask-image:none}
+#title .run{display:inline-block;will-change:transform;transition:opacity .35s}
+#date.off{display:none}
+#title.wrap2 .run,#title.small .run{display:inline}
 .key.view{flex:1;min-width:0}
 .glyph{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--c);opacity:.82;
  filter:drop-shadow(0 0 calc(var(--glow)*5px) color-mix(in srgb,var(--c) calc(var(--glow)*90%),transparent));transition:opacity .25s,filter .25s}
@@ -171,7 +175,7 @@ canvas.on{opacity:1}
 
 <aside class="panel" id="layout" aria-label="Layout">
  <div class="tabs"><button data-tab="look" aria-pressed="false">Look</button><button data-tab="layout" aria-pressed="true">Layout</button></div>
- <h2>Layout <em>v7</em></h2>
+ <h2>Layout <em>v8</em></h2>
  <p class="hint">On a phone, tap the top panel to open or close the tuning. Values are kept on this device. "Copy values" gives all numbers, both panels, for Sven.</p>
  <label for="scene">Scene</label>
  <select id="scene">
@@ -233,6 +237,9 @@ const C=[
  {p:'layout',s:'Type'},
  {p:'layout',k:'font',l:'Font',t:'select',o:[['grotesk','Space Grotesk'],['barlow','Barlow Semi Condensed'],['atkinson','Atkinson Hyperlegible Next']],d:'grotesk'},
  {p:'layout',k:'dateFont',l:'Date font',t:'select',o:[['mono','JetBrains Mono'],['same','Same as heading']],d:'mono'},
+ {p:'layout',k:'overflow',l:'Long headings',t:'select',o:[['scroll','Scroll'],['wrap','Wrap to two lines']],d:'scroll'},
+ {p:'layout',k:'scrollSpeed',l:'Scroll speed',t:'range',min:15,max:120,step:5,d:45,u:'px/s'},
+ {p:'layout',k:'scrollPause',l:'Pause at start',t:'range',min:0,max:4,step:.25,d:1.5,u:'s'},
  {p:'layout',k:'title_',l:'Heading size',t:'range',min:14,max:34,step:.5,d:18.5,u:'px'},
  {p:'layout',k:'dateSize',l:'Date size',t:'range',min:12,max:30,step:.5,d:15,u:'px'},
  {p:'layout',k:'cardSize',l:'Text card size',t:'range',min:14,max:26,step:.5,d:16.5,u:'px'},
@@ -286,7 +293,7 @@ const PRESETS={car:{font:'barlow',dateFont:'same',title_:28,dateSize:23,cardSize
  hand:{title_:21,dateSize:17,cardSize:17,labelSize:10.5,bar:4,key:52,labels:true}};
 $('pCar').onclick=()=>{Object.assign(V,PRESETS.car);apply(true);};$('pHand').onclick=()=>{Object.assign(V,PRESETS.hand);apply(true);};
 $('reset').onclick=()=>{V={...DEF};try{localStorage.removeItem('tm-hud');}catch(e){}apply(false);};
-$('copy').onclick=()=>{const t=JSON.stringify({version:'v7',...V},null,1);$('out').style.display='block';$('out').value=t;
+$('copy').onclick=()=>{const t=JSON.stringify({version:'v8',...V},null,1);$('out').style.display='block';$('out').value=t;
  try{navigator.clipboard.writeText(t);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy values',1500);}catch(e){}};
 
 /* ---------- phone: tap the top panel to open the tuning; tabs switch Look / Layout ---------- */
@@ -297,8 +304,19 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showTab(b.dat
 $('hud').addEventListener('click',()=>{if($('look').classList.contains('open')||$('layout').classList.contains('open')){$('look').classList.remove('open');$('layout').classList.remove('open');}else showTab(tab);});
 
 /* ---------- heading fit: full size, then one step smaller, then two lines ---------- */
-function fitTitle(){const t=$('title');if(t.classList.contains('deck'))return;t.classList.remove('small','wrap2');
- if(t.scrollWidth>t.clientWidth+1){t.classList.add('small');if(t.scrollWidth>t.clientWidth+1)t.classList.add('wrap2');}}
+// two ways to handle a heading that does not fit: scroll it (pause, slide to the end, pause, fade, again) or wrap it
+let scr={on:false,phase:'start',t:0,x:0,max:0};
+function setTitleText(txt){const t=$('title');t.innerHTML='';const r=document.createElement('span');r.className='run';r.textContent=txt;t.appendChild(r);fitTitle();}
+function fitTitle(){const t=$('title'),r=t.querySelector('.run');t.classList.remove('small','wrap2','scroll','fits');if(r){r.style.transform='';r.style.opacity=1;}
+ scr={on:false,phase:'start',t:0,x:0,max:0};
+ if(V.overflow==='wrap'){if(t.scrollWidth>t.clientWidth+1){t.classList.add('small');if(t.scrollWidth>t.clientWidth+1)t.classList.add('wrap2');}return;}
+ t.classList.add('scroll');const over=r?r.offsetWidth-t.clientWidth:0;
+ if(over>1){scr={on:true,phase:'start',t:0,x:0,max:over+6};}else t.classList.add('fits');}
+function stepScroll(dt){if(!scr.on||!playing)return;const r=$('title').querySelector('.run');if(!r)return;scr.t+=dt;
+ if(scr.phase==='start'){if(scr.t>=V.scrollPause){scr.phase='move';scr.t=0;}}
+ else if(scr.phase==='move'){scr.x=Math.min(scr.max,scr.x+V.scrollSpeed*dt);r.style.transform=`translateX(${-scr.x}px)`;if(scr.x>=scr.max){scr.phase='end';scr.t=0;}}
+ else if(scr.phase==='end'){if(scr.t>=1.2){scr.phase='fade';scr.t=0;r.style.opacity=0;}}
+ else if(scr.phase==='fade'){if(scr.t>=.4){scr.x=0;r.style.transform='';r.style.opacity=1;scr.phase='start';scr.t=0;}}}
 addEventListener('resize',()=>{layoutCard();fitTitle();});
 function layoutCard(){const s=$('stage').getBoundingClientRect(),h=$('hud').getBoundingClientRect(),d=$('dock').getBoundingClientRect();
  $('card').style.top=(h.bottom-s.top+8)+'px';$('card').style.bottom=(s.bottom-d.top+8)+'px';}
@@ -309,8 +327,8 @@ function setScene(k){scene=k;const S=SCENES[k];
  for(const id of ['picDino','picEarth'])$(id).classList.toggle('on',S.pic===id);
  $('gl').classList.toggle('on',k==='tunnel');$('ov').classList.toggle('on',k==='tunnel');
  const t=$('title');
- if(k==='tunnel'){t.className='lit deck';t.textContent='History of the Universe';}
- else{t.className='lit';t.textContent=S.h.replace(/\.$/,'');$('date').innerHTML=S.d[0]+'<small>'+S.d[1]+'</small>';
+ if(k==='tunnel'){t.className='lit';$('date').classList.add('off');setTitleText('Next: The first quasar, 13.1 Ga');}
+ else{t.className='lit';$('date').classList.remove('off');$('date').innerHTML=S.d[0]+'<small>'+S.d[1]+'</small>';setTitleText(S.h.replace(/\.$/,''));
   $('tripBar').firstChild.style.width=(S.trip*100)+'%';$('nextBar').firstChild.style.width=(S.next*100)+'%';}
  $('cardText').className=S.text?'':'note';
  $('cardText').textContent=S.text||(k==='tunnel'?'No event here: this is the stretch between two events.':'This scene only tests the heading.');
@@ -362,7 +380,7 @@ if(gl){const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
  ['R','T','E','F','S','W','C','A','B','P','K'].forEach(k=>U[k]=gl.getUniformLocation(pr,k));}
 const flyers=[];let nextF=1.5,fSide=1,lastF=[];
 let simT=0,tt=0,ph=0,ww=0,kd=1,last=performance.now(),uiT=0;
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;stepScroll(dt);
  if(scene==='tunnel'){
   const sp=playing?dt*V.speed:0;simT=(simT+sp)%LOOP;const u=simT/LOOP,p=P0+(P1-P0)*u,km=p*L;
   const kt=Math.pow(12,u*u);kd=playing?kd+(kt-kd)*(1-Math.exp(-dt/.4)):kd;
@@ -384,7 +402,7 @@ function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;
    const z=2+(1.05-2)*F.age/10;F.ang+=F.spin*(playing?dt:0);const fade=Math.min(1,F.age/1.5)*Math.min(1,(10-F.age)/2),rr=(.35/z)*H*.55;
    let x=cx+Math.cos(F.ang)*rr;const y=cy+Math.sin(F.ang)*rr*.9;ctx.font=`400 ${13*dpr/z*1.1}px "JetBrains Mono", monospace`;
    const half=ctx.measureText(F.text).width/2,pad=10*dpr;x=Math.max(half+pad,Math.min(o.width-half-pad,x));ctx.fillStyle=`rgba(${fc},${.75*fade})`;ctx.fillText(F.text,x,y);}
-  uiT-=dt;if(uiT<=0){uiT=.1;$('date').innerHTML=(SPAN*(1-p)/1e9).toFixed(3)+'<small>Ga</small>';
+  uiT-=dt;if(uiT<=0){uiT=.1;
    $('tripBar').firstChild.style.width=(p*100)+'%';$('nextBar').firstChild.style.width=(u*100)+'%';}
  }
  requestAnimationFrame(frame);}
