@@ -12,7 +12,7 @@
 /* ---------- design tokens: the tune panels write these ---------- */
 :root{
  --bg:#07090d;--cardBg:#11141b;--ink:#f2f4f7;--muted:#9aa3b2;--accent:#9e0303;
- --radius:18px;--gap:12px;--gutter:16px;--closedH:120px;--openH:176px;
+ --radius:18px;--gap:12px;--gutter:16px;--closedH:140px;--openH:176px;
  --artPos:50%;--bright:.85;--sat:1;--scrim:.88;--scrimW:82%;
  --eraSat:1;--eraBright:1;--strip:5px;--road:12px;
  --font:'Barlow Semi Condensed',system-ui,sans-serif;--teaserFont:'Literata',Georgia,serif;
@@ -166,7 +166,7 @@ body.noteaser .teaser,body.noroad .road,body.nolegend .legend,body.nomiles .mile
 
 <aside class="panel" id="layout" aria-label="Layout">
  <div class="tabs"><button data-tab="look" aria-pressed="false">Look</button><button data-tab="layout" aria-pressed="true">Layout</button></div>
- <h2>Layout <em>menu v1.1</em></h2>
+ <h2>Layout <em>menu v1.2</em></h2>
  <p class="hint">On a phone, tap the gear to open or close the tuning. Values are kept on this device. "Copy values" gives all numbers, both panels, for Sven.</p>
  <div id="layoutCtl"></div>
  <div class="tb"><button id="reset">Reset all</button><button id="copy">Copy values</button></div>
@@ -186,7 +186,7 @@ const STORIES=[
   title:{en:'History of the Universe',et:'Universumi ajalugu'},
   span:{en:'13.8 billion years → today',et:'13,8 miljardit aastat → täna'},
   start:{en:'Big Bang',et:'Suur Pauk'},
-  teaser:{en:'Thirteen point eight billion years, laid along your road. Where do you think the Earth turns up?',et:'Kolmteist koma kaheksa miljardit aastat, laotatud sinu teele. Kus sinu arvates tekib Maa?'},
+  teaser:{en:'The history of everything, from the Big Bang to today: the first stars, the birth of galaxies, our own Milky Way, the Sun and the Earth.',et:'Kõige ajalugu Suurest Paugust tänaseni: esimesed tähed, galaktikate sünd, meie oma Linnutee, Päike ja Maa.'},
   pics:[['img/universe.jpg','Star field'],['img/universe2.jpg','Supernova']],
   segs:[['#5a44a8',7.2,'Cosmic dawn','Kosmiline koidik'],['#3d6fb0',49.3,'Galaxies assemble','Galaktikad kogunevad'],['#8cc8d6',43.5,'Expansion speeds up','Paisumine kiireneb']],
   miles:[[67.1,'Sun and Earth form','Päike ja Maa tekivad'],[98.3,'First dinosaurs','Esimesed dinosaurused'],[99.998,'Homo sapiens','Homo sapiens','last 0.002%','viimased 0,002%']]},
@@ -194,7 +194,7 @@ const STORIES=[
   title:{en:'History of Earth and Life',et:'Maa ja elu ajalugu'},
   span:{en:'4.56 billion years → today',et:'4,56 miljardit aastat → täna'},
   start:{en:'Earth forms',et:'Maa tekib'},
-  teaser:{en:'Four and a half billion years of one planet. Guess when the first animal shows up.',et:'Neli ja pool miljardit aastat ühe planeedi elust. Arva, millal ilmub esimene loom.'},
+  teaser:{en:'The life story of our planet, from a molten ball to the world we know: oceans and continents, the first life, the animals, the dinosaurs and us.',et:'Meie planeedi elulugu sulanud kerast tänase maailmani: ookeanid ja mandrid, esimene elu, loomad, dinosaurused ja meie.'},
   pics:[['img/earth.jpg','Molten Earth'],['img/earth2.jpg','Ordovician sea'],['../hud/img/dino.jpg','Sauropods'],['../hud/img/earth.jpg','Earth from space']],
   segs:[['#9c2a6e',12.3,'Hadean','Hadeaikum'],['#c94a7e',32.9,'Archean','Arhaikum'],['#d9786a',43.0,'Proterozoic','Proterosoikum'],['#7fa87a',6.3,'Paleozoic','Paleosoikum'],['#5aa9ae',4.1,'Mesozoic','Mesosoikum'],['#e3cd5e',1.4,'Cenozoic','Kainosoikum']],
   miles:[[88.2,'Animals boom (Cambrian)','Loomade plahvatus (kambrium)'],[95.0,'First dinosaurs','Esimesed dinosaurused'],[99.993,'Homo sapiens','Homo sapiens','last 0.007%','viimased 0,007%']]},
@@ -202,7 +202,7 @@ const STORIES=[
   title:{en:'Story of Homo sapiens',et:'Homo sapiensi lugu'},
   span:{en:'300,000 years → today',et:'300 000 aastat → täna'},
   start:{en:'We appear',et:'Me ilmume'},
-  teaser:{en:'Three hundred thousand years of us. How far down the road do you think the pyramids are?',et:'Kolmsada tuhat aastat meid. Kui kaugel teel on sinu arvates püramiidid?'},
+  teaser:{en:'The story of our own species, from its beginnings in Africa to today: how we spread across the world, learned to farm, built cities and wrote it all down.',et:'Meie liigi lugu algusest Aafrikas tänaseni: kuidas me levisime üle maailma, hakkasime põldu harima, ehitasime linnu ja panime kõik kirja.'},
   pics:[['img/sapiens.jpg','Cave painter'],['img/sapiens2.jpg','First farmers']],
   segs:[['#b5683a',80,'In Africa','Aafrikas'],['#d6a35a',16,'Across the world','Üle maailma'],['#8fa36a',2.3,'Farms and cities','Põllud ja linnad'],['#ece4d4',1.7,'Written history','Kirjalik ajalugu']],
   miles:[[80,'Out of Africa','Aafrikast välja'],[96,'First farms','Esimesed põllud'],[98.3,'Writing','Kiri']]},
@@ -241,7 +241,7 @@ const C=[
  {p:'look',k:'radius',l:'Corner radius',t:'range',min:0,max:32,step:1,d:18,u:'px'},
  {p:'look',k:'gap',l:'Gap between cards',t:'range',min:2,max:28,step:1,d:12,u:'px'},
  {p:'look',k:'gutter',l:'Side margin',t:'range',min:6,max:28,step:1,d:16,u:'px'},
- {p:'look',k:'closedH',l:'Closed card height',t:'range',min:72,max:220,step:2,d:120,u:'px'},
+ {p:'look',k:'closedH',l:'Closed card height',t:'range',min:72,max:220,step:2,d:140,u:'px'},
  {p:'look',k:'openH',l:'Open card picture height',t:'range',min:110,max:360,step:2,d:176,u:'px'},
  {p:'look',s:'Pictures'},
  {p:'look',k:'art',l:'Card art',t:'select',o:[['picture','Pictures'],['drawn','Drawn stand-ins'],['era','Era colours only'],['none','None (plain)']],d:'picture'},
@@ -271,10 +271,10 @@ const C=[
  {p:'layout',k:'openFirst',l:'On start',t:'select',o:[['universe','Universe open'],['none','All closed'],['last','Last story used']],d:'universe'},
  {p:'layout',k:'dur',l:'Open / close speed',t:'range',min:0,max:1.2,step:.05,d:.35,u:' s'},
  {p:'layout',s:'The open card shows'},
- {p:'layout',k:'showTeaser',l:'Teaser line',t:'toggle',d:true},
- {p:'layout',k:'showRoad',l:'Road to scale',t:'toggle',d:true},
- {p:'layout',k:'showLegend',l:'Era legend',t:'toggle',d:true},
- {p:'layout',k:'miles',l:'Milestones',t:'select',o:[['guess','Names only, “?” for the place'],['pct','Names and % (spoiler)'],['off','Hidden']],d:'guess'},
+ {p:'layout',k:'showTeaser',l:'Overview text',t:'toggle',d:true},
+ {p:'layout',k:'showRoad',l:'Road to scale',t:'toggle',d:false},
+ {p:'layout',k:'showLegend',l:'Era legend',t:'toggle',d:false},
+ {p:'layout',k:'miles',l:'Milestones',t:'select',o:[['guess','Names only, “?” for the place'],['pct','Names and % (spoiler)'],['off','Hidden']],d:'off'},
  {p:'layout',k:'showStart',l:'Start button',t:'toggle',d:true},
  {p:'layout',s:'Start button'},
  {p:'layout',k:'startH',l:'Height',t:'range',min:44,max:70,step:1,d:52,u:'px'},
@@ -289,7 +289,8 @@ const STRUCT=new Set(['art','picUniverse','picEarth','picSapiens']);
 const desk=matchMedia('(min-width:900px)').matches;
 const DEF={};for(const c of C)if(c.k)DEF[c.k]=c.d;
 let V={...DEF};
-try{const s=JSON.parse(localStorage.getItem('tm-menu')||'{}');for(const k in s)if(k in DEF)V[k]=s[k];}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('tm-menu')||'{}');for(const k in s)if(k in DEF)V[k]=s[k];
+ if(s._v!=='1.2'){V.showRoad=false;V.showLegend=false;V.miles='off';if(V.closedH===120)V.closedH=140;}}catch(e){}
 let lang='en';try{lang=localStorage.getItem('tm-menu-lang')||'en';}catch(e){}
 let last=null;try{last=localStorage.getItem('tm-menu-last');}catch(e){}
 let open=new Set();
@@ -323,7 +324,7 @@ function apply(save,key){
  B.toggle('drift',!!V.drift);B.toggle('noticks',!V.ticks);B.toggle('teaserUpright',V.teaserFont!=='literata');
  B.toggle('noteaser',!V.showTeaser);B.toggle('noroad',!V.showRoad);B.toggle('nolegend',!V.showLegend);B.toggle('nomiles',V.miles==='off');B.toggle('guess',V.miles==='guess');B.toggle('nostart',!V.showStart);
  for(const c of C){if(!c.k)continue;const el=$('c_'+c.k);if(c.t==='toggle')el.checked=!!V[c.k];else el.value=V[c.k];const sp=$('v_'+c.k);if(sp)sp.textContent=V[c.k]+(c.u||'');}
- if(save)try{localStorage.setItem('tm-menu',JSON.stringify(V));}catch(e){}
+ if(save)try{localStorage.setItem('tm-menu',JSON.stringify({...V,_v:'1.2'}));}catch(e){}
  if(!key||STRUCT.has(key))render();
 }
 
@@ -381,7 +382,7 @@ let tt;function toast(t){const el=$('toast');el.textContent=t;el.classList.add('
 
 build();apply(false);
 $('reset').onclick=()=>{V={...DEF};try{localStorage.removeItem('tm-menu');}catch(e){}apply(false);};
-$('copy').onclick=()=>{const t=JSON.stringify({version:'menu v1.1',...V},null,1);$('out').style.display='block';$('out').value=t;
+$('copy').onclick=()=>{const t=JSON.stringify({version:'menu v1.2',...V},null,1);$('out').style.display='block';$('out').value=t;
  try{navigator.clipboard.writeText(t);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy values',1500);}catch(e){}};
 
 /* ---------- phone: the gear opens the tuning; tabs switch Look / Layout ---------- */
