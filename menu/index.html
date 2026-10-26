@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<title>Time Machine Story Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;1,7..72,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* ---------- design tokens: the tune panels write these ---------- */
+:root{
+ --bg:#07090d;--cardBg:#11141b;--ink:#f2f4f7;--muted:#9aa3b2;--accent:#9e0303;
+ --radius:18px;--gap:12px;--gutter:16px;--closedH:120px;--openH:176px;
+ --artPos:50%;--bright:.85;--sat:1;--scrim:.88;--scrimW:82%;
+ --eraSat:1;--eraBright:1;--strip:5px;--road:12px;
+ --font:'Barlow Semi Condensed',system-ui,sans-serif;--teaserFont:'Literata',Georgia,serif;
+ --titleSize:26px;--spanSize:16px;--metaSize:14px;--teaserSize:16px;--listSize:17px;
+ --dur:.35s;--startH:52px;--startR:26px;--top:22px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+
+/* ---------- page layout (same frame as the HUD prototype) ---------- */
+#stage{position:relative;overflow:hidden;width:100vw;height:100vh;height:100dvh;background:var(--bg);grid-area:stage;display:flex;flex-direction:column}
+.panel{grid-area:var(--area);background:#1c2026;border:1px solid #2c3139;border-radius:16px;padding:16px 18px 18px;font-size:13px;color:#d6dbe1;overflow:auto;font-family:'Space Grotesk',system-ui,sans-serif}
+#look{--area:look}#layout{--area:layout}
+@media (min-width:1120px){
+ body{background:#14171c}
+ .wrap{height:100%;display:grid;grid-template-columns:290px 390px 290px;grid-template-areas:"look stage layout";gap:28px;justify-content:center;align-content:center;padding:24px}
+ .panel{max-height:844px;align-self:center}
+}
+@media (min-width:900px) and (max-width:1119px){
+ body{background:#14171c}
+ .wrap{height:100%;display:grid;grid-template-columns:390px 300px;grid-template-rows:418px 418px;grid-template-areas:"stage look" "stage layout";gap:8px 28px;justify-content:center;align-content:center;padding:24px}
+}
+@media (min-width:900px){
+ #stage{width:390px;height:844px;border-radius:44px;box-shadow:0 0 0 10px #050608,0 0 0 11px #2a2e35,0 30px 80px rgba(0,0,0,.6)}
+ :root{--top:46px}
+}
+@media (max-width:899px){
+ .panel{position:fixed;left:8px;right:8px;bottom:8px;max-height:62vh;z-index:20;transform:translateY(110%);transition:transform .3s;box-shadow:0 -10px 40px rgba(0,0,0,.6)}
+ .panel.open{transform:none}
+}
+
+/* ---------- app header ---------- */
+#appHead{padding:calc(env(safe-area-inset-top) + var(--top)) var(--gutter) 14px;display:flex;flex-direction:column;gap:14px;flex:none}
+.brandRow{display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.16em;color:#aab2bf}
+.brand svg{width:18px;height:18px;fill:none;stroke:#aab2bf;stroke-width:1.5;stroke-linecap:round}
+#gear{width:44px;height:44px;margin-right:-10px;border:0;background:none;color:#c3cad5;display:grid;place-items:center}
+#gear svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.titleRow{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+#h1{margin:0;font-size:32px;line-height:1.05;font-weight:700;letter-spacing:-.01em}
+.lang{display:inline-flex;padding:3px;border:1px solid rgba(255,255,255,.18);border-radius:22px;flex:none}
+.lang button{min-width:44px;height:36px;padding:0 12px;border:0;border-radius:18px;font-size:15px;font-weight:600;background:transparent;color:#c3cad5}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* ---------- the list ---------- */
+#list{flex:1;overflow-y:auto;padding:4px var(--gutter) 28px;display:flex;flex-direction:column;gap:var(--gap);scrollbar-width:none;overscroll-behavior:contain}
+#list::-webkit-scrollbar{display:none}
+.card{border-radius:var(--radius);overflow:hidden;background:var(--cardBg);border:1px solid rgba(255,255,255,.08);flex:none}
+.head{display:block;position:relative;width:100%;height:var(--closedH);padding:0;border:0;background:#0b0d12;color:var(--ink);text-align:left;overflow:hidden;transition:height var(--dur) ease}
+.card.open .head{height:var(--openH)}
+.art{position:absolute;inset:0;overflow:hidden}
+.art img,.art svg,.art .era{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% var(--artPos);filter:brightness(var(--bright)) saturate(var(--sat))}
+.art img{transform:scale(1);transition:transform 1s ease}
+body.drift .card.open .art img{transform:scale(1.1);transition:transform 14s ease-out}
+.art .era{display:flex;filter:brightness(calc(var(--bright)*var(--eraBright))) saturate(calc(var(--sat)*var(--eraSat)))}
+.art .era i{display:block;height:100%}
+.scrim{position:absolute;inset:0;background:linear-gradient(90deg,rgba(7,9,13,var(--scrim)) 0%,rgba(7,9,13,calc(var(--scrim)*.62)) calc(var(--scrimW)*.63),rgba(7,9,13,0) var(--scrimW))}
+.hText{position:absolute;left:18px;top:18px;right:56px;display:flex;flex-direction:column;gap:4px}
+.hTitle{font-size:var(--titleSize);line-height:1.05;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.hSpan{font-size:var(--spanSize);font-weight:500;color:#dfe4ea;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.hMeta{display:flex;align-items:center;gap:8px;margin-top:2px;font-size:var(--metaSize);color:#c3cad5}
+.chip{padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.14);color:var(--ink);font-size:12px;font-weight:600}
+.chev{position:absolute;top:20px;right:16px;width:28px;height:28px;border-radius:14px;background:rgba(7,9,13,.55);display:grid;place-items:center;transition:transform var(--dur) ease}
+.chev svg{width:16px;height:16px;fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card.open .chev{transform:rotate(180deg)}
+.strip{position:absolute;left:0;right:0;bottom:0;height:var(--strip);display:flex;transition:opacity var(--dur)}
+.card.open .strip{opacity:0}
+.strip i,.roadBar i{display:block;height:100%;filter:brightness(var(--eraBright)) saturate(var(--eraSat))}
+
+.bodyWrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--dur) ease}
+.card.open .bodyWrap{grid-template-rows:1fr}
+.bodyIn{overflow:hidden;min-height:0}
+.body{padding:16px 18px 20px;display:flex;flex-direction:column;gap:16px}
+.teaser{margin:0;font-family:var(--teaserFont);font-style:italic;font-size:var(--teaserSize);line-height:1.45;color:#d9dde4}
+body.teaserUpright .teaser{font-style:normal}
+.road{display:flex;flex-direction:column;gap:8px}
+.label{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.roadBox{position:relative;height:calc(var(--road) + 10px)}
+.roadBar{position:absolute;left:0;right:0;top:5px;height:var(--road);border-radius:calc(var(--road)/2);overflow:hidden;display:flex}
+.tick{position:absolute;top:0;height:calc(var(--road) + 10px);width:2px;border-radius:1px;background:#fff;box-shadow:0 0 0 1px rgba(7,9,13,.6);transform:translateX(-1px)}
+body.noticks .tick{display:none}
+.ends{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px}
+.legend span{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:#c3cad5}
+.legend b{width:10px;height:10px;border-radius:3px;filter:brightness(var(--eraBright)) saturate(var(--eraSat))}
+.miles{display:flex;flex-direction:column}
+.miles div{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid rgba(255,255,255,.08);font-size:var(--listSize)}
+.miles span{font-weight:500}
+.miles strong{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.start{height:var(--startH);border:0;border-radius:var(--startR);background:var(--accent);color:#fff;font-size:19px;font-weight:600;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:10px}
+.start svg{width:16px;height:16px;fill:#fff}
+.start:active{transform:translateY(1px)}
+body.noteaser .teaser,body.noroad .road,body.nolegend .legend,body.nomiles .miles,body.nostart .start{display:none}
+@media (prefers-reduced-motion:reduce){:root{--dur:0s!important}.art img{transition:none!important}}
+
+#toast{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%);background:rgba(10,13,18,.94);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 13px;font-size:14px;white-space:nowrap;z-index:6;opacity:0;transition:opacity .25s;pointer-events:none}
+#toast.on{opacity:1}
+
+/* ---------- tune panels ---------- */
+.panel h2{margin:0;font-size:15px;font-weight:600;color:#fff;display:flex;align-items:baseline;gap:8px}
+.panel h2 em{font-style:normal;font-weight:400;font-size:11px;color:#8f99a4}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;height:32px;border-radius:8px;border:1px solid #3a414b;background:#262b33;color:#cfd5dc;font-size:13px}
+.tabs button[aria-pressed="true"]{background:#e9eef3;color:#0b0e12;border-color:#e9eef3}
+@media (min-width:900px){.panel .tabs{display:none}}
+.panel .hint{margin:4px 0 6px;color:#8f99a4;font-size:12px;line-height:1.45}
+.panel h3{margin:16px 0 0;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#7f8994;border-top:1px solid #2c3139;padding-top:12px}
+.panel label{display:block;margin:10px 0 4px;color:#aeb7c1}
+.panel label span{float:right;font-family:'JetBrains Mono',monospace;color:#fff}
+.panel label.tg{display:flex;align-items:center;justify-content:space-between}
+.panel input[type=range]{width:100%;accent-color:#c41a1a;margin:0}
+.panel select,.panel input[type=color]{width:100%;height:32px;background:#12151a;color:#fff;border:1px solid #333a43;border-radius:8px;padding:0 8px;font:inherit}
+.sw{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;margin-top:10px}
+.sw label{white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;font-size:12.5px}
+.panel .sw input[type=color]{width:40px;height:26px;flex:none;border-radius:6px;padding:1px}
+.panel input[type=checkbox]{width:18px;height:18px;accent-color:#c41a1a}
+.tb{display:flex;gap:8px;margin-top:16px}
+.tb button{flex:1;height:36px;border-radius:8px;border:1px solid #3a414b;background:#262b33;color:#fff;font-size:13px}
+#out{width:100%;height:140px;margin-top:10px;background:#12151a;color:#cfe3ef;border:1px solid #333a43;border-radius:8px;font:11px/1.4 'JetBrains Mono',monospace;padding:8px;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<aside class="panel" id="look" aria-label="Look">
+ <div class="tabs"><button data-tab="look" aria-pressed="true">Look</button><button data-tab="layout" aria-pressed="false">Layout</button></div>
+ <h2>Look</h2>
+ <p class="hint">Colours, cards, pictures, era bands and type.</p>
+ <div id="lookCtl"></div>
+</aside>
+
+<div id="stage">
+ <header id="appHead">
+  <div class="brandRow">
+   <div class="brand"><svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7.5"/><path d="M9 4.5V9l3 2"/></svg>THE ORIGINAL TIME MACHINE</div>
+   <button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+  <div class="titleRow">
+   <h1 id="h1">Choose your journey</h1>
+   <div class="lang" role="group" aria-label="Language"><button data-lang="en" aria-pressed="true">EN</button><button data-lang="et" aria-pressed="false">ET</button></div>
+  </div>
+ </header>
+ <div id="list"></div>
+ <div id="toast" role="status"></div>
+</div>
+
+<aside class="panel" id="layout" aria-label="Layout">
+ <div class="tabs"><button data-tab="look" aria-pressed="false">Look</button><button data-tab="layout" aria-pressed="true">Layout</button></div>
+ <h2>Layout <em>menu v1</em></h2>
+ <p class="hint">On a phone, tap the gear to open or close the tuning. Values are kept on this device. "Copy values" gives all numbers, both panels, for Sven.</p>
+ <div id="layoutCtl"></div>
+ <div class="tb"><button id="reset">Reset all</button><button id="copy">Copy values</button></div>
+ <textarea id="out" readonly aria-label="Current values"></textarea>
+</aside>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const root=document.documentElement;
+
+/* ---------- the four stories ----------
+   Era bands and milestones are road shares (0–100 %, 0 = start, 100 = today), as in the decks.
+   Pictures are stand-ins until each deck's heading picture is chosen. */
+const STORIES=[
+ {id:'universe',events:{en:72,et:53},
+  title:{en:'History of the Universe',et:'Universumi ajalugu'},
+  span:{en:'13.8 billion years → today',et:'13,8 miljardit aastat → täna'},
+  start:{en:'Big Bang',et:'Suur Pauk'},
+  teaser:{en:'From the Big Bang to this morning. The Earth turns up only two thirds of the way in.',et:'Suurest Paugust tänase hommikuni. Maa ilmub alles kahe kolmandiku teekonna peal.'},
+  pics:[['img/universe.jpg','Star field'],['img/universe2.jpg','Supernova']],
+  segs:[['#5a44a8',7.2,'Cosmic dawn','Kosmiline koidik'],['#3d6fb0',49.3,'Galaxies assemble','Galaktikad kogunevad'],['#8cc8d6',43.5,'Expansion speeds up','Paisumine kiireneb']],
+  miles:[[67.1,'Sun and Earth form','Päike ja Maa tekivad'],[98.3,'First dinosaurs','Esimesed dinosaurused'],[99.998,'Homo sapiens','Homo sapiens','last 0.002%','viimased 0,002%']]},
+ {id:'earth',events:{en:56,et:49},
+  title:{en:'History of Earth and Life',et:'Maa ja elu ajalugu'},
+  span:{en:'4.56 billion years → today',et:'4,56 miljardit aastat → täna'},
+  start:{en:'Earth forms',et:'Maa tekib'},
+  teaser:{en:'Our planet’s whole life story. For most of the drive, life is too small to see.',et:'Meie planeedi kogu elulugu. Suurema osa teest on elu palja silmaga nähtamatu.'},
+  pics:[['img/earth.jpg','Molten Earth'],['img/earth2.jpg','Ordovician sea'],['../hud/img/dino.jpg','Sauropods'],['../hud/img/earth.jpg','Earth from space']],
+  segs:[['#9c2a6e',12.3,'Hadean','Hadeaikum'],['#c94a7e',32.9,'Archean','Arhaikum'],['#d9786a',43.0,'Proterozoic','Proterosoikum'],['#7fa87a',6.3,'Paleozoic','Paleosoikum'],['#5aa9ae',4.1,'Mesozoic','Mesosoikum'],['#e3cd5e',1.4,'Cenozoic','Kainosoikum']],
+  miles:[[88.2,'Animals boom (Cambrian)','Loomade plahvatus (kambrium)'],[95.0,'First dinosaurs','Esimesed dinosaurused'],[99.993,'Homo sapiens','Homo sapiens','last 0.007%','viimased 0,007%']]},
+ {id:'sapiens',events:{en:'[N]',et:46},
+  title:{en:'Story of Homo sapiens',et:'Homo sapiensi lugu'},
+  span:{en:'300,000 years → today',et:'300 000 aastat → täna'},
+  start:{en:'We appear',et:'Me ilmume'},
+  teaser:{en:'Three hundred thousand years of us. All of written history fits into the last 2% of the road.',et:'Kolmsada tuhat aastat meid. Kogu kirjapandud ajalugu mahub tee viimasesse kahte protsenti.'},
+  pics:[['img/sapiens.jpg','Cave painter'],['img/sapiens2.jpg','First farmers']],
+  segs:[['#b5683a',80,'In Africa','Aafrikas'],['#d6a35a',16,'Across the world','Üle maailma'],['#8fa36a',2.3,'Farms and cities','Põllud ja linnad'],['#ece4d4',1.7,'Written history','Kirjalik ajalugu']],
+  miles:[[80,'Out of Africa','Aafrikast välja'],[96,'First farms','Esimesed põllud'],[98.3,'Writing','Kiri']]},
+ {id:'estonia',events:{en:105,et:105},estOnly:true,
+  title:{en:'Republic of Estonia',et:'Eesti Vabariik'},
+  span:{en:'1918 → today',et:'1918 → täna'},
+  start:{en:'1918',et:'1918'},
+  teaser:{en:'Twenty-two years free, fifty-one occupied, then free again. You will feel every stretch of it.',et:'Kakskümmend kaks aastat vabadust, viiskümmend üks okupatsiooni, siis jälle vabadus. Tunned iga teelõiku.'},
+  pics:[],
+  segs:[['#3a7cc0',20.4,'First republic','Esimene vabariik'],['#4a4e57',47.2,'Occupation','Okupatsioon'],['#e8ecef',32.4,'Restored republic','Taastatud vabariik']],
+  miles:[[1.9,'Peace of Tartu, 1920','Tartu rahu, 1920'],[64.8,'Singing Revolution, 1988','Laulev revolutsioon, 1988'],[95.4,'Freedom outlasts occupation, 2021','Vabadus kestvam kui okupatsioon, 2021']]}
+];
+
+/* drawn stand-in art (used for "Drawn", and for Estonia, which has no picture yet) */
+const DRAWN={
+ universe:`<svg viewBox="0 0 390 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><filter id="ub" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter><filter id="ub2" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="4"/></filter></defs><rect width="390" height="180" fill="#0a0818"/><g filter="url(#ub)"><ellipse cx="290" cy="90" rx="125" ry="36" fill="#5b3fb0" opacity=".6" transform="rotate(-18 290 90)"/><ellipse cx="298" cy="87" rx="64" ry="20" fill="#6fa8e0" opacity=".55" transform="rotate(-18 298 87)"/><ellipse cx="120" cy="40" rx="70" ry="30" fill="#3b2a6b" opacity=".5"/></g><ellipse cx="295" cy="88" rx="16" ry="9" fill="#fff1d6" filter="url(#ub2)" transform="rotate(-18 295 88)"/><circle cx="295" cy="88" r="3.5" fill="#fff"/><g fill="#fff"><circle cx="22" cy="38" r=".9"/><circle cx="70" cy="58" r="1.2"/><circle cx="96" cy="128" r=".8"/><circle cx="152" cy="40" r="1"/><circle cx="188" cy="96" r="1.3"/><circle cx="222" cy="128" r=".9"/><circle cx="260" cy="146" r="1.1"/><circle cx="350" cy="130" r="1.2"/><circle cx="368" cy="70" r=".7"/><circle cx="36" cy="140" r="1"/></g></svg>`,
+ earth:`<svg viewBox="0 0 390 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><radialGradient id="eg" cx="32%" cy="30%" r="72%"><stop offset="0" stop-color="#ffb347"/><stop offset=".35" stop-color="#e0521c"/><stop offset=".75" stop-color="#7a1408"/><stop offset="1" stop-color="#2a0603"/></radialGradient><filter id="eglow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter></defs><rect width="390" height="180" fill="#0b0605"/><circle cx="322" cy="158" r="134" fill="#ff5a1f" opacity=".35" filter="url(#eglow)"/><circle cx="322" cy="158" r="128" fill="url(#eg)"/><g fill="none" stroke="#ffd27a" stroke-width="1.3" stroke-linecap="round" opacity=".65"><path d="M222 112 L246 122 L240 142 L262 158"/><path d="M300 54 L289 80 L309 96 L303 122 L318 140"/><path d="M344 86 L362 106 L356 134"/></g><circle cx="150" cy="56" r="15" fill="#a39d96"/><circle cx="157" cy="51" r="15" fill="#0b0605" opacity=".55"/></svg>`,
+ sapiens:`<svg viewBox="0 0 390 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1430"/><stop offset=".5" stop-color="#6e3540"/><stop offset=".8" stop-color="#d9823f"/><stop offset="1" stop-color="#f2b25c"/></linearGradient></defs><rect width="390" height="180" fill="url(#sg)"/><circle cx="284" cy="138" r="34" fill="#ffd08a" opacity=".95"/><path d="M0 140 Q80 128 160 136 T390 132 L390 180 L0 180 Z" fill="#1a0f0c"/><g fill="#1a0f0c" stroke="#1a0f0c" stroke-linecap="round"><path d="M97 140 L99 112 L101 112 L104 140 Z"/><path d="M100 120 L84 104 M100 118 L118 103 M100 114 L100 102" fill="none" stroke-width="3"/><ellipse cx="100" cy="101" rx="44" ry="8"/><ellipse cx="86" cy="98" rx="20" ry="5"/><ellipse cx="116" cy="97" rx="18" ry="5"/></g></svg>`,
+ estonia:`<svg viewBox="0 0 390 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="esky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#244f86"/><stop offset="1" stop-color="#6fa3d6"/></linearGradient></defs><rect width="390" height="180" fill="url(#esky)"/><path d="M0 150 L0 128 L8 120 L15 132 L23 112 L31 130 L38 122 L46 134 L54 116 L62 130 L69 108 L77 128 L85 120 L92 132 L100 114 L108 130 L115 124 L123 134 L131 110 L139 128 L146 118 L154 132 L162 114 L170 130 L177 122 L185 134 L193 112 L201 128 L208 120 L216 132 L224 106 L232 128 L239 118 L247 132 L255 116 L263 130 L270 122 L278 134 L286 112 L294 128 L301 120 L309 132 L317 114 L325 130 L332 118 L340 132 L348 110 L356 128 L363 120 L371 132 L379 116 L390 128 L390 150 Z" fill="#0c0f13"/><rect y="148" width="390" height="32" fill="#e8edf1"/></svg>`
+};
+
+const UI={
+ en:{h1:'Choose your journey',events:'events',road:'The road, to scale',today:'Today',go:'Start the journey',estOnly:'In Estonian',starting:'Starting: '},
+ et:{h1:'Vali oma teekond',events:'sündmust',road:'Tee mõõtkavas',today:'Täna',go:'Alusta teekonda',estOnly:'',starting:'Alustame: '}
+};
+
+/* ---------- controls: one list drives both panels ---------- */
+const C=[
+ // LOOK
+ {p:'look',s:'Screen'},
+ {p:'look',k:'bg',l:'Background',t:'color',d:'#07090d'},
+ {p:'look',k:'cardBg',l:'Card body',t:'color',d:'#11141b'},
+ {p:'look',k:'ink',l:'Text',t:'color',d:'#f2f4f7'},
+ {p:'look',k:'accent',l:'Start button',t:'color',d:'#9e0303'},
+ {p:'look',s:'Cards'},
+ {p:'look',k:'radius',l:'Corner radius',t:'range',min:0,max:32,step:1,d:18,u:'px'},
+ {p:'look',k:'gap',l:'Gap between cards',t:'range',min:2,max:28,step:1,d:12,u:'px'},
+ {p:'look',k:'gutter',l:'Side margin',t:'range',min:6,max:28,step:1,d:16,u:'px'},
+ {p:'look',k:'closedH',l:'Closed card height',t:'range',min:72,max:220,step:2,d:120,u:'px'},
+ {p:'look',k:'openH',l:'Open card picture height',t:'range',min:110,max:360,step:2,d:176,u:'px'},
+ {p:'look',s:'Pictures'},
+ {p:'look',k:'art',l:'Card art',t:'select',o:[['picture','Pictures'],['drawn','Drawn stand-ins'],['era','Era colours only'],['none','None (plain)']],d:'picture'},
+ {p:'look',k:'artPos',l:'Picture focus (top → bottom)',t:'range',min:0,max:100,step:1,d:50,u:'%'},
+ {p:'look',k:'bright',l:'Picture brightness',t:'range',min:.3,max:1.3,step:.05,d:.85},
+ {p:'look',k:'sat',l:'Picture saturation',t:'range',min:0,max:1.6,step:.05,d:1},
+ {p:'look',k:'scrim',l:'Shade behind the title',t:'range',min:0,max:1,step:.02,d:.88},
+ {p:'look',k:'scrimW',l:'Shade width',t:'range',min:30,max:100,step:1,d:82,u:'%'},
+ {p:'look',k:'drift',l:'Slow zoom on the open card',t:'toggle',d:true},
+ {p:'look',s:'Era colours'},
+ {p:'look',k:'eraSat',l:'Era colour saturation',t:'range',min:0,max:1.6,step:.05,d:1},
+ {p:'look',k:'eraBright',l:'Era colour brightness',t:'range',min:.6,max:1.4,step:.05,d:1},
+ {p:'look',k:'strip',l:'Closed card: road strip',t:'range',min:0,max:14,step:1,d:5,u:'px'},
+ {p:'look',k:'road',l:'Open card: road bar',t:'range',min:4,max:26,step:1,d:12,u:'px'},
+ {p:'look',k:'ticks',l:'Milestone ticks on the road',t:'toggle',d:true},
+ {p:'look',s:'Type'},
+ {p:'look',k:'font',l:'Menu font',t:'select',o:[['barlow','Barlow Semi Condensed'],['atkinson','Atkinson Hyperlegible Next'],['grotesk','Space Grotesk']],d:'barlow'},
+ {p:'look',k:'titleSize',l:'Story title',t:'range',min:18,max:38,step:.5,d:26,u:'px'},
+ {p:'look',k:'spanSize',l:'Time span',t:'range',min:12,max:22,step:.5,d:16,u:'px'},
+ {p:'look',k:'metaSize',l:'Event count',t:'range',min:11,max:18,step:.5,d:14,u:'px'},
+ {p:'look',k:'teaserFont',l:'Teaser font',t:'select',o:[['literata','Literata italic'],['literataUp','Literata upright'],['same','Menu font']],d:'literata'},
+ {p:'look',k:'teaserSize',l:'Teaser',t:'range',min:13,max:21,step:.5,d:16,u:'px'},
+ {p:'look',k:'listSize',l:'Milestone list',t:'range',min:13,max:21,step:.5,d:17,u:'px'},
+ // LAYOUT
+ {p:'layout',s:'Behaviour'},
+ {p:'layout',k:'single',l:'Only one story open at a time',t:'toggle',d:true},
+ {p:'layout',k:'openFirst',l:'On start',t:'select',o:[['universe','Universe open'],['none','All closed'],['last','Last story used']],d:'universe'},
+ {p:'layout',k:'dur',l:'Open / close speed',t:'range',min:0,max:1.2,step:.05,d:.35,u:' s'},
+ {p:'layout',s:'The open card shows'},
+ {p:'layout',k:'showTeaser',l:'Teaser line',t:'toggle',d:true},
+ {p:'layout',k:'showRoad',l:'Road to scale',t:'toggle',d:true},
+ {p:'layout',k:'showLegend',l:'Era legend',t:'toggle',d:true},
+ {p:'layout',k:'showMiles',l:'Milestones with %',t:'toggle',d:true},
+ {p:'layout',k:'showStart',l:'Start button',t:'toggle',d:true},
+ {p:'layout',s:'Start button'},
+ {p:'layout',k:'startH',l:'Height',t:'range',min:44,max:70,step:1,d:52,u:'px'},
+ {p:'layout',k:'startR',l:'Corner radius',t:'range',min:0,max:35,step:1,d:26,u:'px'},
+ {p:'layout',s:'Picture per story (stand-ins)'},
+ {p:'layout',k:'picUniverse',l:'Universe',t:'select',o:STORIES[0].pics.map((p,i)=>[String(i),p[1]]),d:'0'},
+ {p:'layout',k:'picEarth',l:'Earth and Life',t:'select',o:STORIES[1].pics.map((p,i)=>[String(i),p[1]]),d:'0'},
+ {p:'layout',k:'picSapiens',l:'Homo sapiens',t:'select',o:STORIES[2].pics.map((p,i)=>[String(i),p[1]]),d:'0'}
+];
+const PICKEY={universe:'picUniverse',earth:'picEarth',sapiens:'picSapiens'};
+const STRUCT=new Set(['art','picUniverse','picEarth','picSapiens']);
+const desk=matchMedia('(min-width:900px)').matches;
+const DEF={};for(const c of C)if(c.k)DEF[c.k]=c.d;
+let V={...DEF};
+try{const s=JSON.parse(localStorage.getItem('tm-menu')||'{}');for(const k in s)if(k in DEF)V[k]=s[k];}catch(e){}
+let lang='en';try{lang=localStorage.getItem('tm-menu-lang')||'en';}catch(e){}
+let last=null;try{last=localStorage.getItem('tm-menu-last');}catch(e){}
+let open=new Set();
+if(V.openFirst==='universe')open.add('universe');else if(V.openFirst==='last'&&last)open.add(last);
+
+function build(){for(const c of C){const host=$(c.p+'Ctl');
+ if(c.s){const h=document.createElement('h3');h.textContent=c.s;host.appendChild(h);continue;}
+ const lab=document.createElement('label');lab.htmlFor='c_'+c.k;let inp;
+ if(c.t==='toggle'){lab.className='tg';lab.textContent=c.l;inp=document.createElement('input');inp.type='checkbox';inp.id='c_'+c.k;lab.appendChild(inp);host.appendChild(lab);
+  inp.addEventListener('change',()=>{V[c.k]=inp.checked;apply(true,c.k);});continue;}
+ lab.textContent=c.l;
+ if(c.t==='range'){const sp=document.createElement('span');sp.id='v_'+c.k;lab.appendChild(sp);inp=document.createElement('input');inp.type='range';inp.min=c.min;inp.max=c.max;inp.step=c.step;
+  inp.addEventListener('input',()=>{V[c.k]=+inp.value;apply(true,c.k);});}
+ else if(c.t==='color'){inp=document.createElement('input');inp.type='color';inp.id='c_'+c.k;inp.addEventListener('input',()=>{V[c.k]=inp.value;apply(true,c.k);});
+  let g=host.lastElementChild;if(!g||!g.classList.contains('sw')){g=document.createElement('div');g.className='sw';host.appendChild(g);}
+  lab.appendChild(inp);g.appendChild(lab);continue;}
+ else{inp=document.createElement('select');for(const [v,t] of c.o){const op=document.createElement('option');op.value=v;op.textContent=t;inp.appendChild(op);}inp.addEventListener('change',()=>{V[c.k]=inp.value;apply(true,c.k);});}
+ inp.id='c_'+c.k;host.appendChild(lab);host.appendChild(inp);}}
+
+const FONTS={barlow:"'Barlow Semi Condensed','Arial Narrow',sans-serif",atkinson:"'Atkinson Hyperlegible Next',system-ui,sans-serif",grotesk:"'Space Grotesk',system-ui,sans-serif"};
+function apply(save,key){
+ const S=(k,v)=>root.style.setProperty(k,v);
+ S('--bg',V.bg);S('--cardBg',V.cardBg);S('--ink',V.ink);S('--accent',V.accent);
+ S('--radius',V.radius+'px');S('--gap',V.gap+'px');S('--gutter',V.gutter+'px');S('--closedH',V.closedH+'px');S('--openH',V.openH+'px');
+ S('--artPos',V.artPos+'%');S('--bright',V.bright);S('--sat',V.sat);S('--scrim',V.scrim);S('--scrimW',V.scrimW+'%');
+ S('--eraSat',V.eraSat);S('--eraBright',V.eraBright);S('--strip',V.strip+'px');S('--road',V.road+'px');
+ S('--font',FONTS[V.font]||FONTS.barlow);S('--teaserFont',V.teaserFont==='same'?(FONTS[V.font]||FONTS.barlow):"'Literata',Georgia,serif");
+ S('--titleSize',V.titleSize+'px');S('--spanSize',V.spanSize+'px');S('--metaSize',V.metaSize+'px');S('--teaserSize',V.teaserSize+'px');S('--listSize',V.listSize+'px');
+ S('--dur',V.dur+'s');S('--startH',V.startH+'px');S('--startR',V.startR+'px');
+ const B=document.body.classList;
+ B.toggle('drift',!!V.drift);B.toggle('noticks',!V.ticks);B.toggle('teaserUpright',V.teaserFont!=='literata');
+ B.toggle('noteaser',!V.showTeaser);B.toggle('noroad',!V.showRoad);B.toggle('nolegend',!V.showLegend);B.toggle('nomiles',!V.showMiles);B.toggle('nostart',!V.showStart);
+ for(const c of C){if(!c.k)continue;const el=$('c_'+c.k);if(c.t==='toggle')el.checked=!!V[c.k];else el.value=V[c.k];const sp=$('v_'+c.k);if(sp)sp.textContent=V[c.k]+(c.u||'');}
+ if(save)try{localStorage.setItem('tm-menu',JSON.stringify(V));}catch(e){}
+ if(!key||STRUCT.has(key))render();
+}
+
+/* ---------- render the list ---------- */
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct=p=>{const s=String(parseFloat(p.toFixed(p>=99.9?3:1)));return (lang==='et'?s.replace('.',','):s)+'%';};
+const band=segs=>segs.map(s=>`<i style="flex:0 0 ${s[1]}%;background:${s[0]}"></i>`).join('');
+function artFor(s){
+ if(V.art==='none')return '';
+ if(V.art==='era')return `<div class="era">${band(s.segs)}</div>`;
+ if(V.art==='picture'&&s.pics.length){const p=s.pics[+V[PICKEY[s.id]]||0]||s.pics[0];return `<img src="${p[0]}" alt="">`;}
+ return DRAWN[s.id];
+}
+function render(){
+ const T=UI[lang];const L=o=>o[lang];const li=lang==='et'?1:0;
+ $('h1').textContent=T.h1;root.lang=lang;
+ document.querySelectorAll('.lang button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lang===lang));
+ $('list').innerHTML=STORIES.map(s=>{
+  const isOpen=open.has(s.id);
+  const chip=s.estOnly&&T.estOnly?`<span class="chip">${T.estOnly}</span>`:'';
+  return `<section class="card${isOpen?' open':''}" data-id="${s.id}">
+  <button class="head" aria-expanded="${isOpen}" aria-controls="b_${s.id}">
+   <span class="art">${artFor(s)}</span><span class="scrim" aria-hidden="true"></span>
+   <span class="hText"><span class="hTitle">${esc(L(s.title))}</span><span class="hSpan">${esc(L(s.span))}</span>
+    <span class="hMeta">${s.events[lang]} ${T.events}${chip}</span></span>
+   <span class="chev" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M5 7.5l5 5 5-5"/></svg></span>
+   <span class="strip" aria-hidden="true">${band(s.segs)}</span>
+  </button>
+  <div class="bodyWrap" id="b_${s.id}"><div class="bodyIn"><div class="body">
+   <p class="teaser">${esc(L(s.teaser))}</p>
+   <div class="road"><span class="label">${T.road}</span>
+    <div class="roadBox"><div class="roadBar">${band(s.segs)}</div>${s.miles.map(m=>`<span class="tick" style="left:${m[0]}%"></span>`).join('')}</div>
+    <div class="ends"><span>${esc(L(s.start))}</span><span>${T.today}</span></div></div>
+   <div class="legend">${s.segs.map(g=>`<span><b style="background:${g[0]}"></b>${esc(g[2+li])}</span>`).join('')}</div>
+   <div class="miles">${s.miles.map(m=>`<div><span>${esc(m[1+li])}</span><strong>${esc(m[3+li]||pct(m[0]))}</strong></div>`).join('')}</div>
+   <button class="start"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>${T.go}</button>
+  </div></div></div></section>`;}).join('');
+}
+
+/* ---------- interaction ---------- */
+$('list').addEventListener('click',e=>{
+ const card=e.target.closest('.card');if(!card)return;const id=card.dataset.id;
+ if(e.target.closest('.start')){const s=STORIES.find(x=>x.id===id);toast(UI[lang].starting+s.title[lang]);
+  try{localStorage.setItem('tm-menu-last',id);}catch(err){}return;}
+ if(!e.target.closest('.head'))return;
+ const was=open.has(id);
+ if(V.single)for(const o of [...open])if(o!==id){open.delete(o);setOpen(o,false);}
+ if(was)open.delete(id);else open.add(id);
+ setOpen(id,!was);
+ if(!was)setTimeout(()=>card.scrollIntoView({behavior:'smooth',block:'nearest'}),V.dur*1000+30);
+});
+function setOpen(id,on){const c=document.querySelector(`.card[data-id="${id}"]`);if(!c)return;c.classList.toggle('open',on);c.querySelector('.head').setAttribute('aria-expanded',on);}
+document.querySelectorAll('.lang button').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;try{localStorage.setItem('tm-menu-lang',lang);}catch(e){}render();});
+let tt;function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),1600);}
+
+build();apply(false);
+$('reset').onclick=()=>{V={...DEF};try{localStorage.removeItem('tm-menu');}catch(e){}apply(false);};
+$('copy').onclick=()=>{const t=JSON.stringify({version:'menu v1',...V},null,1);$('out').style.display='block';$('out').value=t;
+ try{navigator.clipboard.writeText(t);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy values',1500);}catch(e){}};
+
+/* ---------- phone: the gear opens the tuning; tabs switch Look / Layout ---------- */
+let tab='look';
+function showTab(t){tab=t;$('look').classList.toggle('open',t==='look');$('layout').classList.toggle('open',t==='layout');
+ document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===t));}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+$('gear').addEventListener('click',()=>{
+ if(desk){toast('App settings: not part of this mockup');return;}
+ if($('look').classList.contains('open')||$('layout').classList.contains('open')){$('look').classList.remove('open');$('layout').classList.remove('open');}else showTab(tab);});
+</script>
+</body>
+</html>
