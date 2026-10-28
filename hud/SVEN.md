@@ -1,6 +1,8 @@
 # Glass HUD — how to build it in React Native
 
-*For Sven. Version 3, 2026-10-25 (first version 2026-10-19). Reference prototype: https://ottsme.github.io/time_machine/hud/ (code in `hud/index.html`, Map and Text modes in `hud/modes.js`).*
+*For Sven. Version 3.1, 2026-10-28 (first version 2026-10-19). Reference prototype: https://ottsme.github.io/time_machine/hud/ (code in `hud/index.html`, Map and Text modes in `hud/modes.js`).*
+
+**Changed in version 3.1 (2026-10-28):** the map's colours and a starting Google style added as M-11. Nothing else changed.
 
 **Changed in version 3:** the Map and Text modes are decided (Ott, 2026-10-25). See "Map mode" and "Text mode" below.
 
@@ -45,6 +47,31 @@ The map answers "where on the road is it?": the timeline laid on the road the tr
   - **Whole road:** the full route on one screen, rotated so the start sits upper left and the destination lower right, on the diagonal of the free area with some room to spare. If start and destination are close (a walking loop), rotate along the route's longest dimension instead. Pan, pinch and double-tap zoom work; a button restores the full view.
 - **M-9. Compass needle:** shown whenever the map is not north-up. Tapping it turns the map north-up.
 - **M-10. The top panel and the dock** are the same as in Image mode.
+- **M-11. Colours.** The values the prototype uses (`hud/modes.js`, `drawMap`). Tune by eye on a real phone; these are the starting point.
+  - **Base map:** ground `#12161b`, water `#0c1820`, rivers `#0f2230`, roads `#1f262e` (major roads `#262e38`). Town names: large towns `#b9c3cd`, small ones `#76828f`. No road names, no icons, no points of interest, no transit.
+  - **Route ahead:** `#a9dcff` (the view colour, `--light`) with a soft glow. **Road already driven:** `#3b4652`, no glow. Both lines sit on a dark casing `rgba(4,6,9,0.85)` about 4 px wider than the line, so the route stays readable over any road.
+  - **Pins ahead:** `#a9dcff`; A-cards larger, with a white core. **Passed pins:** `#6b7884`, smaller. Every pin has a thin dark outline `#080b0f`. The current event's pin has a slowly pulsing ring in `#a9dcff` (about 1.6 s per pulse). Clusters: a larger disc in the same colours with the count in dark text.
+  - **Next A-card label (M-4):** a dark glass tag `rgba(8,11,16,0.84)` with a 1 px border `rgba(255,255,255,0.12)`, text `#e9eef3`.
+  - **Car (M-7):** an arrow in `#9e0303` with a white outline and a faint white glow, on a soft light disc `rgba(255,255,255,0.10)`.
+  - **Google style, as a starting point** (the base map only; route, pins and car are drawn by the app):
+
+    ```json
+    [
+     {"elementType":"geometry","stylers":[{"color":"#12161b"}]},
+     {"elementType":"labels.icon","stylers":[{"visibility":"off"}]},
+     {"elementType":"labels.text.fill","stylers":[{"color":"#76828f"}]},
+     {"elementType":"labels.text.stroke","stylers":[{"color":"#12161b"}]},
+     {"featureType":"administrative.locality","elementType":"labels.text.fill","stylers":[{"color":"#b9c3cd"}]},
+     {"featureType":"poi","stylers":[{"visibility":"off"}]},
+     {"featureType":"transit","stylers":[{"visibility":"off"}]},
+     {"featureType":"road","elementType":"geometry","stylers":[{"color":"#1f262e"}]},
+     {"featureType":"road","elementType":"labels","stylers":[{"visibility":"off"}]},
+     {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#262e38"}]},
+     {"featureType":"water","elementType":"geometry","stylers":[{"color":"#0c1820"}]}
+    ]
+    ```
+
+  - **iOS:** the style only applies when `react-native-maps` uses the Google provider (`provider={PROVIDER_GOOGLE}`); Apple's maps ignore it. **Alternatively,** the same colours can be set in Google's cloud map styling (a Map ID), if that suits you better.
 
 ## Text mode
 
