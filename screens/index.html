@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<title>Time Machine Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap">
+<style>
+/* Tokens shared with the HUD (hud/) and the story menu (menu/) prototypes */
+:root{
+ --bg:#07090d;--sheet:#11141b;--raise:#181c24;--line:rgba(255,255,255,.08);
+ --ink:#f2f4f7;--muted:#9aa3b2;--dim:#6b7482;
+ --light:#a9dcff;--brand:#9e0303;--brandHi:#b8140f;
+ --btn:#262b32;--keyR:12px;
+ --font:'Barlow Semi Condensed',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#14171c;color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+button,input{font-family:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+/* ---------- gallery ---------- */
+.intro{max-width:1200px;margin:0 auto;padding:28px 24px 8px}
+.intro h1{margin:0 0 6px;font-size:28px;font-weight:700}
+.intro p{margin:0;color:var(--muted);font-size:16px;max-width:720px;line-height:1.45}
+.gallery{display:flex;flex-wrap:wrap;gap:40px 32px;justify-content:center;padding:28px 24px 60px}
+figure{margin:0;display:flex;flex-direction:column;gap:12px;align-items:center}
+figcaption{font-size:15px;color:var(--muted);text-align:center;max-width:390px}
+figcaption b{display:block;color:var(--ink);font-size:16px;font-weight:600;margin-bottom:2px}
+.phone{position:relative;width:390px;height:844px;overflow:hidden;background:var(--bg);border-radius:44px;
+ box-shadow:0 0 0 10px #050608,0 0 0 11px #2a2e35,0 30px 80px rgba(0,0,0,.6)}
+@media (max-width:899px){
+ body{background:var(--bg)}
+ .intro{padding:20px 16px 4px}.intro h1{font-size:24px}
+ .gallery{flex-direction:column;flex-wrap:nowrap;gap:28px;padding:16px 0 40px}
+ .phone{width:100vw;height:min(844px,calc(100vw * 2.164));border-radius:0;box-shadow:none}
+ figcaption{padding:0 16px}
+}
+
+/* ---------- map (the same dark style as the HUD's Map mode) ---------- */
+.map{position:absolute;inset:0}
+.map svg{width:100%;height:100%;display:block}
+
+/* ---------- glass, keys, buttons ---------- */
+.glass{background:color-mix(in srgb,#080b10 55%,transparent);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
+ -webkit-backdrop-filter:blur(14px) saturate(120%);backdrop-filter:blur(14px) saturate(120%)}
+.key{border:1px solid rgba(255,255,255,.07);border-radius:var(--keyR);color:var(--muted);
+ background:linear-gradient(180deg,color-mix(in oklab,var(--btn),white 8%) 0%,var(--btn) 48%,color-mix(in oklab,var(--btn),black 17%) 100%);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -1px 0 rgba(0,0,0,.35),0 3px 7px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;gap:8px}
+.key svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.key.on{color:var(--light);border-color:color-mix(in srgb,var(--light) 40%,transparent);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -1px 0 rgba(0,0,0,.35),0 3px 7px rgba(0,0,0,.35),0 0 14px color-mix(in srgb,var(--light) 45%,transparent)}
+.key.on svg{filter:drop-shadow(0 0 4px var(--light))}
+/* three kinds of action, and only three:
+   brand  = starts or repeats a journey (Start, Again)
+   solid  = any other confirming action (Save, Done)
+   text   = the way out (Skip, Exit, Cancel)        */
+.brand{height:56px;border:0;border-radius:28px;color:#fff;font-size:20px;font-weight:600;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:10px;
+ background:linear-gradient(180deg,var(--brandHi),var(--brand) 60%,#7d0202);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 6px 18px rgba(158,3,3,.35)}
+.brand svg{width:16px;height:16px;fill:#fff}
+.solid{height:48px;padding:0 24px;border:0;border-radius:24px;background:var(--ink);color:var(--bg);font-size:18px;font-weight:600}
+.text{height:48px;padding:0 16px;border:0;background:none;color:var(--muted);font-size:18px;font-weight:600}
+
+/* ---------- top bar ---------- */
+.top{position:absolute;left:10px;right:10px;top:46px;border-radius:16px;padding:8px 14px 10px 6px;display:flex;align-items:center;gap:4px;z-index:3}
+.back{width:44px;height:44px;border:0;background:none;color:var(--ink);display:grid;place-items:center;flex:none}
+.back svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.top .t{display:flex;flex-direction:column;min-width:0}
+.top .k{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.top .h{font-size:21px;font-weight:700;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .n{margin-left:auto;font-size:14px;color:var(--muted);white-space:nowrap;align-self:flex-end;padding-bottom:2px}
+
+/* ---------- map controls ---------- */
+.mctl{position:absolute;right:10px;display:flex;flex-direction:column;gap:8px;z-index:2}
+.mctl .grp{border-radius:12px;padding:4px;display:flex;flex-direction:column;gap:4px}
+.mb{width:44px;height:44px;border:0;border-radius:9px;background:transparent;color:#c3cad5;display:grid;place-items:center}
+.mb svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- bottom sheet ---------- */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sheet);border-top:1px solid var(--line);border-radius:24px 24px 0 0;padding:10px 16px 28px;z-index:3;
+ box-shadow:0 -14px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);display:flex;flex-direction:column;gap:14px}
+.grab{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);align-self:center}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.seg .key{height:48px;font-size:17px;font-weight:600}
+.dest{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 14px;border-radius:14px;background:var(--raise);border:1px solid var(--line)}
+.dest .pin{width:22px;height:22px;flex:none;fill:none;stroke:var(--light);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dest .tx{flex:1;min-width:0}
+.dest .l{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.dest .v{font-size:19px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon{width:44px;height:44px;border:0;border-radius:12px;background:none;color:var(--muted);display:grid;place-items:center;flex:none}
+.icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sum{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 2px}
+.sum .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.sum .big small{font-size:17px;font-weight:500;color:var(--muted);margin-left:4px}
+.sum .hint{font-size:15px;color:var(--muted);text-align:right}
+
+/* ---------- search ---------- */
+.field{display:flex;align-items:center;gap:10px;height:56px;padding:0 8px 0 14px;border-radius:14px;background:var(--raise);border:1.5px solid color-mix(in srgb,var(--light) 70%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--light) 12%,transparent)}
+.field svg{width:20px;height:20px;flex:none;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round}
+.field input{flex:1;min-width:0;height:100%;border:0;background:none;color:var(--ink);font-size:19px;outline:none}
+.field input::placeholder{color:var(--dim)}
+.caret{width:2px;height:24px;background:var(--light);margin-left:-8px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.lbl{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:4px 2px -4px}
+.list{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:12px;min-height:58px;border-bottom:1px solid var(--line);padding:0 2px}
+.row:last-child{border-bottom:0}
+.row .ic{width:36px;height:36px;border-radius:10px;background:var(--raise);display:grid;place-items:center;flex:none}
+.row .ic svg{width:18px;height:18px;fill:none;stroke:var(--light);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.row .nm{flex:1;min-width:0;font-size:19px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .nm small{display:block;font-size:14px;color:var(--dim);font-weight:400}
+.row .icon{width:40px;height:40px;color:var(--dim)}
+
+/* ---------- dialog ---------- */
+.dim{position:absolute;inset:0;background:rgba(3,4,6,.62);z-index:4;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.dialog{position:absolute;left:18px;right:18px;z-index:5;border-radius:22px;background:var(--sheet);border:1px solid rgba(255,255,255,.1);padding:22px 20px 16px;
+ box-shadow:0 24px 60px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08);display:flex;flex-direction:column;gap:14px}
+.dialog h2{margin:0;font-size:26px;font-weight:700;line-height:1.1}
+.dialog p{margin:-6px 0 0;font-size:17px;color:var(--muted);line-height:1.35}
+.dialog .field{height:54px}
+.acts{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+
+/* ---------- settings ---------- */
+.page{position:absolute;inset:0;overflow:hidden;background:var(--bg);padding:46px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.ph{display:flex;align-items:center;gap:4px;margin-left:-10px}
+.ph h1{margin:0;font-size:30px;font-weight:700}
+.sec{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:10px 4px 0}
+.sec+p{margin:-4px 4px 2px;font-size:15px;color:var(--muted);line-height:1.35}
+.card{border-radius:18px;background:var(--sheet);border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:12px}
+.ch{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.ch b{font-size:19px;font-weight:600}
+.ch .val{font-size:19px;font-weight:600;color:var(--light);font-variant-numeric:tabular-nums;white-space:nowrap}
+.card .d{margin:-8px 0 0;font-size:15px;color:var(--muted);line-height:1.35}
+.sw{width:52px;height:30px;border-radius:15px;background:#2a3039;border:1px solid rgba(255,255,255,.1);position:relative;flex:none}
+.sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#8a94a2;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+.sw.on{background:color-mix(in srgb,var(--light) 35%,#1a2a36);border-color:color-mix(in srgb,var(--light) 50%,transparent)}
+.sw.on i{left:25px;background:var(--light);box-shadow:0 0 8px var(--light)}
+.slider{position:relative;height:28px}
+.slider .tr{position:absolute;left:0;right:0;top:12px;height:4px;border-radius:2px;background:#2a3039}
+.slider .fi{position:absolute;left:0;top:12px;height:4px;border-radius:2px;background:var(--light);box-shadow:0 0 6px color-mix(in srgb,var(--light) 60%,transparent)}
+.slider .th{position:absolute;top:3px;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:#e9eef3;box-shadow:0 0 0 4px color-mix(in srgb,var(--light) 25%,transparent),0 2px 4px rgba(0,0,0,.5)}
+.ends{display:flex;justify-content:space-between;font-size:14px;color:var(--dim);margin-top:-6px;font-variant-numeric:tabular-nums}
+
+/* ---------- arrival ---------- */
+.horizon{position:absolute;inset:0;background:
+ linear-gradient(180deg,#1b2433 0%,#3b4a63 32%,#c98a5a 47%,#f0c08a 50%,#2b2621 51%,#14120f 100%)}
+.horizon::after{content:"";position:absolute;left:50%;top:50%;width:0;height:0;border-left:150px solid transparent;border-right:150px solid transparent;border-bottom:420px solid #0c0b0a;transform:translateX(-50%)}
+.horizon::before{content:"";position:absolute;left:50%;top:50%;width:3px;height:420px;transform:translateX(-50%);background:repeating-linear-gradient(180deg,rgba(240,200,140,.7) 0 18px,transparent 18px 44px);z-index:1;-webkit-mask-image:linear-gradient(180deg,transparent,#000 40%);mask-image:linear-gradient(180deg,transparent,#000 40%)}
+.stand{position:absolute;left:0;right:0;top:56%;text-align:center;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.35);z-index:2}
+.arrTop{position:absolute;left:10px;right:10px;top:46px;border-radius:14px;padding:12px 14px;z-index:3;display:flex;justify-content:space-between;align-items:baseline}
+.arrTop b{font-size:24px;font-weight:700}
+.arrTop span{font-size:20px;font-weight:600;color:#dfe4ea}
+.done{position:absolute;left:12px;right:12px;bottom:26px;z-index:3;border-radius:24px;padding:20px 18px 14px;display:flex;flex-direction:column;gap:14px}
+.done h2{margin:0;font-size:28px;font-weight:700}
+.done .sub{margin:-8px 0 0;font-size:17px;color:#c9d0da}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.st{border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);padding:10px 12px}
+.st .l{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.st .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.st .v small{font-size:15px;font-weight:500;color:var(--muted);margin-left:3px}
+.done .acts{justify-content:space-between;align-items:center}
+.done .brand{flex:1;margin-left:8px}
+</style>
+</head>
+<body>
+
+<header class="intro">
+ <h1>App screens in the HUD's theme</h1>
+ <p>Static mockups of the screens around the trip, in the same dark, glass-and-console look as the HUD and the story menu. Nothing here is clickable. Place names are examples.</p>
+</header>
+
+<template id="mapT">
+<svg viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+ <rect width="390" height="844" fill="#12161b"/>
+ <g class="world">
+ <path d="M0 0 H390 V150 C340 170 300 140 250 165 C200 190 170 160 120 175 C80 188 40 170 0 190 Z" fill="#0c1820"/>
+ <ellipse cx="300" cy="520" rx="34" ry="60" fill="#0c1820" transform="rotate(-20 300 520)"/>
+ <path d="M40 840 C80 760 120 720 150 640 C170 590 210 560 250 520" fill="none" stroke="#0f2230" stroke-width="3"/>
+ <g fill="none" stroke="#1f262e" stroke-width="2" stroke-linecap="round">
+  <path d="M0 300 C100 290 180 320 390 280"/><path d="M60 180 C70 300 40 420 80 560 C100 640 60 760 90 844"/>
+  <path d="M390 380 C300 420 250 470 200 560"/><path d="M0 620 C120 600 220 640 390 610"/><path d="M230 160 C240 260 300 330 390 340"/>
+  <path d="M120 844 C150 760 220 730 260 650"/>
+ </g>
+ <g fill="rgba(120,135,150,.07)"><circle cx="228" cy="208" r="40"/><circle cx="190" cy="700" r="34"/><circle cx="110" cy="430" r="10"/><circle cx="280" cy="420" r="8"/></g>
+ <path id="alt" d="M228 214 C300 280 330 380 300 470 C270 560 250 620 192 690" fill="none" stroke="#2c3540" stroke-width="7" stroke-linecap="round"/>
+ <path d="M228 214 C190 280 150 330 150 420 C150 520 140 600 192 690" fill="none" stroke="rgba(4,6,9,.85)" stroke-width="11" stroke-linecap="round"/>
+ <path d="M228 214 C190 280 150 330 150 420 C150 520 140 600 192 690" fill="none" stroke="#a9dcff" stroke-width="7" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #a9dcff)"/>
+ <g font-family="Barlow Semi Condensed, sans-serif" text-anchor="middle">
+  <text x="232" y="250" font-size="16" font-weight="600" fill="#b9c3cd">Tallinn</text>
+  <text x="208" y="736" font-size="16" font-weight="600" fill="#b9c3cd">Tartu</text>
+  <text x="112" y="452" font-size="13" font-weight="500" fill="#76828f">Paide</text>
+  <text x="286" y="444" font-size="13" font-weight="500" fill="#76828f">Rakvere</text>
+ </g>
+ <circle cx="228" cy="214" r="10" fill="#9e0303" stroke="#fff" stroke-width="3"/>
+ <g transform="translate(192 690)"><circle r="13" fill="#0a0c0f" stroke="#a9dcff" stroke-width="3"/><path d="M-4 5 V-6 H5 L2 -2.5 L5 1 H-4" fill="#a9dcff"/></g>
+ </g>
+</svg>
+</template>
+
+<main class="gallery">
+
+<!-- 1 · route -->
+<figure>
+<div class="phone" role="img" aria-label="Route screen mockup">
+ <div class="map" data-map="fit"></div>
+ <div class="top glass">
+  <button class="back" aria-label="Back to stories"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div class="t"><span class="k">Story · 72 events</span><span class="h">History of the Universe</span></div>
+ </div>
+ <div class="mctl" style="top:150px">
+  <div class="grp glass"><button class="mb" aria-label="North up"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 5-4 1 2-5z"/></svg></button></div>
+  <div class="grp glass"><button class="mb" aria-label="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><button class="mb" aria-label="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button></div>
+  <div class="grp glass"><button class="mb" aria-label="My location"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg></button></div>
+ </div>
+ <section class="sheet">
+  <div class="grab"></div>
+  <div class="seg">
+   <button class="key"><svg viewBox="0 0 24 24"><circle cx="13" cy="4" r="2"/><path d="M10 21l2-7 3 3v4M8 11l3-3 3 2 3 1M11 8l-1 6"/></svg>Walking</button>
+   <button class="key on" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M5 17h14v-5l-2-5H7l-2 5z"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/><path d="M5 12h14"/></svg>Driving</button>
+  </div>
+  <div class="dest">
+   <svg class="pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+   <div class="tx"><div class="l">To</div><div class="v">Tartu, Raekoja plats</div></div>
+   <button class="icon" aria-label="Save to favourites"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></button>
+  </div>
+  <div class="sum"><span class="big">186<small>km</small> 2:21<small>h</small></span><span class="hint">Tap the other road<br>to choose it</span></div>
+  <button class="brand"><svg viewBox="0 0 16 16"><path d="M4 2.5v11l9.5-5.5z"/></svg>Start journey</button>
+ </section>
+</div>
+<figcaption><b>1 · Choose the road</b>The map fills the screen, in the HUD's dark map style; the chosen road glows, the alternative stays grey. Story on a glass bar at the top, everything else on one sheet. No dock before the trip.</figcaption>
+</figure>
+
+<!-- 2 · destination -->
+<figure>
+<div class="phone" role="img" aria-label="Destination search mockup">
+ <div class="map" data-map></div>
+ <div class="top glass">
+  <button class="back" aria-label="Back to stories"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div class="t"><span class="k">Story · 47 events</span><span class="h">Story of Homo sapiens</span></div>
+ </div>
+ <section class="sheet" style="top:220px">
+  <div class="grab"></div>
+  <div class="seg">
+   <button class="key"><svg viewBox="0 0 24 24"><circle cx="13" cy="4" r="2"/><path d="M10 21l2-7 3 3v4M8 11l3-3 3 2 3 1M11 8l-1 6"/></svg>Walking</button>
+   <button class="key on" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M5 17h14v-5l-2-5H7l-2 5z"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/><path d="M5 12h14"/></svg>Driving</button>
+  </div>
+  <label class="field"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input placeholder="Where to?" aria-label="Destination"><span class="caret"></span></label>
+  <div class="lbl">Favourites</div>
+  <div class="list">
+   <div class="row"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/></svg></span><span class="nm">Home</span><button class="icon" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button><button class="icon" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button></div>
+   <div class="row"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span><span class="nm">Office</span><button class="icon" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button><button class="icon" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button></div>
+   <div class="row"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span><span class="nm">Tartu, Raekoja plats<small>186 km</small></span><button class="icon" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button><button class="icon" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button></div>
+   <div class="row"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span><span class="nm">Pärnu beach<small>129 km</small></span><button class="icon" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button><button class="icon" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button></div>
+   <div class="row"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span><span class="nm">Grandparents<small>58 km</small></span><button class="icon" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button><button class="icon" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button></div>
+  </div>
+ </section>
+</div>
+<figcaption><b>2 · Where to?</b>The same sheet, pulled up. One search field with a lit focus ring; favourites right under it, with distance from here. Edit and delete stay quiet until needed.</figcaption>
+</figure>
+
+<!-- 3 · save favourite -->
+<figure>
+<div class="phone" role="img" aria-label="Save to favourites dialog mockup">
+ <div class="map" data-map></div>
+ <div class="top glass">
+  <button class="back" aria-label="Back to stories"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div class="t"><span class="k">Story · 72 events</span><span class="h">History of the Universe</span></div>
+ </div>
+ <div class="dim"></div>
+ <div class="dialog" style="top:300px">
+  <h2>Save to favourites?</h2>
+  <p>Give this place a name you will recognise later.</p>
+  <label class="field"><input value="Tartu, Raekoja plats" aria-label="Name"><span class="caret"></span></label>
+  <div class="acts"><button class="text">Skip</button><button class="solid">Save</button></div>
+ </div>
+</div>
+<figcaption><b>3 · Save a place</b>Dark dialog over a dimmed, slightly blurred screen. Save is solid white, Skip is plain text. Red is kept for starting a journey.</figcaption>
+</figure>
+
+<!-- 4 · settings -->
+<figure>
+<div class="phone" role="img" aria-label="Settings mockup">
+ <div class="page">
+  <div class="ph"><button class="back" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><h1>Settings</h1></div>
+  <div class="sec">App</div>
+  <div class="card">
+   <div class="ch"><b>Welcome message</b><span class="sw" role="switch" aria-checked="false" aria-label="Welcome message"><i></i></span></div>
+   <p class="d">Show the introduction when you open the story list.</p>
+  </div>
+  <div class="sec">Journey</div>
+  <p>How far off the road, or from the destination, counts as off or arrived.</p>
+  <div class="card">
+   <div class="ch"><b>Rerouting tolerance</b><span class="val">20 m</span></div>
+   <p class="d">Recalculate when you stay this far from the road for a few seconds. Walking default 25 m.</p>
+   <div class="slider" aria-hidden="true"><div class="tr"></div><div class="fi" style="width:16%"></div><div class="th" style="left:16%"></div></div>
+   <div class="ends"><span>5 m</span><span>100 m</span></div>
+  </div>
+  <div class="card">
+   <div class="ch"><b>Arrival distance</b><span class="val">15 m</span></div>
+   <p class="d">The final event plays when you are this close to the destination.</p>
+   <div class="slider" aria-hidden="true"><div class="tr"></div><div class="fi" style="width:10.5%"></div><div class="th" style="left:10.5%"></div></div>
+   <div class="ends"><span>5 m</span><span>100 m</span></div>
+  </div>
+ </div>
+</div>
+<figcaption><b>4 · Settings</b>Dark cards, values in the console light, sliders and switches lit the same way. Same words, slightly shorter.</figcaption>
+</figure>
+
+<!-- 5 · arrival -->
+<figure>
+<div class="phone" role="img" aria-label="Journey complete mockup">
+ <div class="horizon"></div><div class="stand">arrival picture · stand-in</div>
+ <div class="arrTop glass"><b>We have arrived. Today.</b><span>Today</span></div>
+ <section class="done glass">
+  <h2>Journey complete</h2>
+  <p class="sub">History of the Universe · Tallinn to Tartu</p>
+  <div class="stats">
+   <div class="st"><div class="l">Road</div><div class="v">186<small>km</small></div></div>
+   <div class="st"><div class="l">Time</div><div class="v">2:24<small>h</small></div></div>
+   <div class="st"><div class="l">Events</div><div class="v">72<small>of 72</small></div></div>
+   <div class="st"><div class="l">Years</div><div class="v">13.8<small>billion</small></div></div>
+  </div>
+  <div class="acts"><button class="text">Exit</button><button class="brand">Again</button></div>
+ </section>
+</div>
+<figcaption><b>5 · Journey complete</b>Not a white pop-up over a grey map: the summary rises over the arrival picture, after the ceremony line. Planned versus actual and reroutes are for us, not for the traveller.</figcaption>
+</figure>
+
+</main>
+<script>
+const t=document.getElementById('mapT');
+document.querySelectorAll('[data-map]').forEach(m=>{m.appendChild(t.content.cloneNode(true));if(m.dataset.map==='fit')m.querySelector('.world').setAttribute('transform','translate(62 -10) scale(.7)');});
+</script>
+</body>
+</html>
