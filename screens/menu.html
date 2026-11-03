@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5a0710">
+<title>Time Machine Story Menu v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Literata:ital,opsz,wght@1,7..72,400&display=swap">
+<style>
+:root{
+ --ink:#f2f4f7;--muted:#c3cad5;--brand:#9e0303;
+ --redH:30%;--redA:1;--cardH:1;--gap:14px;--gutter:16px;--radius:20px;
+ --font:'Barlow Semi Condensed',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+/* ---------- page layout (same frame as the other prototypes) ---------- */
+#stage{position:relative;overflow:hidden;width:100vw;height:100vh;height:100dvh;display:flex;flex-direction:column;grid-area:stage}
+.panel{grid-area:panel;background:#1c2026;border:1px solid #2c3139;border-radius:16px;padding:16px 18px 18px;font-size:13px;color:#d6dbe1;overflow:auto}
+@media (min-width:900px){
+ body{background:#14171c}
+ .wrap{height:100%;display:grid;grid-template-columns:390px 290px;grid-template-areas:"stage panel";gap:28px;justify-content:center;align-content:center;padding:24px}
+ #stage{width:390px;height:844px;border-radius:44px;box-shadow:0 0 0 10px #050608,0 0 0 11px #2a2e35,0 30px 80px rgba(0,0,0,.6)}
+ .panel{max-height:844px;align-self:center}
+}
+@media (max-width:899px){
+ .panel{position:fixed;left:8px;right:8px;bottom:8px;max-height:62vh;z-index:20;transform:translateY(110%);transition:transform .3s;box-shadow:0 -10px 40px rgba(0,0,0,.6)}
+ .panel.open{transform:none}
+}
+
+/* ---------- background: company red at the top, deep night blue below ---------- */
+.bg{position:absolute;inset:0;z-index:0;background:
+ radial-gradient(120% 40% at 50% 0%,color-mix(in srgb,#c8130d calc(var(--redA)*55%),transparent) 0%,transparent 70%),
+ linear-gradient(180deg,
+  color-mix(in srgb,var(--brand) calc(var(--redA)*100%),#0b1230) 0%,
+  color-mix(in srgb,#4a0712 calc(var(--redA)*100%),#0b1230) calc(var(--redH)*.55),
+  color-mix(in srgb,#1d0a22 calc(var(--redA)*100%),#0b1230) var(--redH),
+  #0b1230 calc(var(--redH) + 25%),
+  #060914 100%)}
+.stars{position:absolute;inset:0;z-index:0;opacity:.5;pointer-events:none;
+ background-image:radial-gradient(1px 1px at 12% 62%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 78% 70%,#fff 50%,transparent 51%),radial-gradient(1.2px 1.2px at 40% 83%,#fff 50%,transparent 51%),
+ radial-gradient(1px 1px at 88% 91%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 22% 95%,#fff 50%,transparent 51%),radial-gradient(1.3px 1.3px at 63% 57%,#fff 50%,transparent 51%),
+ radial-gradient(1px 1px at 52% 74%,#cfe3ff 50%,transparent 51%),radial-gradient(1px 1px at 6% 80%,#cfe3ff 50%,transparent 51%),radial-gradient(1px 1px at 95% 60%,#fff 50%,transparent 51%);
+ -webkit-mask-image:linear-gradient(180deg,transparent 35%,#000 70%);mask-image:linear-gradient(180deg,transparent 35%,#000 70%)}
+body.nostars .stars{display:none}
+.grain{position:absolute;inset:0;z-index:0;opacity:.06;pointer-events:none;mix-blend-mode:overlay;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ---------- header ---------- */
+header{position:relative;z-index:1;padding:calc(env(safe-area-inset-top) + 46px) var(--gutter) 16px;display:flex;flex-direction:column;gap:12px;flex:none}
+.brandRow{display:flex;align-items:center;justify-content:space-between}
+.brandName{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.18em;color:rgba(255,255,255,.82)}
+.brandName svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
+#gear{width:44px;height:44px;margin-right:-10px;border:0;background:none;color:rgba(255,255,255,.85);display:grid;place-items:center}
+#gear svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+h1{margin:0;font-size:34px;line-height:1.02;font-weight:700;letter-spacing:-.01em;text-shadow:0 2px 12px rgba(0,0,0,.25)}
+
+/* ---------- the three stories share the height ---------- */
+#list{position:relative;z-index:1;flex:1;min-height:0;padding:0 var(--gutter) calc(env(safe-area-inset-bottom) + 24px);display:flex;flex-direction:column;gap:var(--gap)}
+.card{position:relative;flex:1 1 0;min-height:0;border-radius:var(--radius);overflow:hidden;border:1px solid rgba(255,255,255,.12);background:#0b0d12;
+ box-shadow:0 14px 34px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12);display:block;width:100%;padding:0;text-align:left;color:var(--ink)}
+.card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:var(--pos,50% 50%);filter:brightness(.9)}
+.scrim{position:absolute;inset:0;background:
+ linear-gradient(90deg,rgba(6,8,12,.86) 0%,rgba(6,8,12,.55) 52%,rgba(6,8,12,0) 85%),
+ linear-gradient(0deg,rgba(6,8,12,.75) 0%,rgba(6,8,12,0) 45%)}
+.txt{position:absolute;left:18px;right:18px;top:16px;bottom:14px;display:flex;flex-direction:column;gap:3px}
+.t{font-size:26px;line-height:1.05;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.s{font-size:16px;font-weight:500;color:#dfe4ea;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.teaser{margin:6px 0 0;font-family:'Literata',Georgia,serif;font-style:italic;font-size:15px;line-height:1.35;color:#d9dde4;max-width:88%;
+ display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+body.noteaser .teaser{display:none}
+.foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.n{font-size:14px;color:#c3cad5}
+.go{height:44px;padding:0 16px 0 18px;border-radius:22px;border:0;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;white-space:nowrap}
+.go svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+body.go-solid .go{background:var(--ink);color:#0b0e12}
+body.go-glass .go{background:rgba(10,12,18,.45);color:#fff;border:1px solid rgba(255,255,255,.28);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+body.go-brand .go{background:linear-gradient(180deg,#b8140f,var(--brand) 60%,#7d0202);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.card:active{transform:scale(.99)}
+
+/* ---------- tune panel ---------- */
+.panel h2{margin:0 0 4px;font-size:15px;font-weight:600;color:#fff}
+.panel .hint{margin:0 0 8px;color:#8f99a4;font-size:12px;line-height:1.45}
+.panel label{display:block;margin:12px 0 4px;color:#aeb7c1}
+.panel label span{float:right;color:#fff;font-variant-numeric:tabular-nums}
+.panel label.tg{display:flex;align-items:center;justify-content:space-between}
+.panel input[type=range]{width:100%;accent-color:#c41a1a;margin:0}
+.panel select{width:100%;height:32px;background:#12151a;color:#fff;border:1px solid #333a43;border-radius:8px;padding:0 8px;font:inherit}
+.panel input[type=checkbox]{width:18px;height:18px;accent-color:#c41a1a}
+.tb{display:flex;gap:8px;margin-top:16px}
+.tb button{flex:1;height:36px;border-radius:8px;border:1px solid #3a414b;background:#262b33;color:#fff;font-size:13px}
+</style>
+</head>
+<body class="go-solid">
+<div class="wrap">
+<div id="stage">
+ <div class="bg"></div><div class="stars"></div><div class="grain"></div>
+ <header>
+  <div class="brandRow">
+   <div class="brandName"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>THE ORIGINAL TIME MACHINE</div>
+   <button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+  <h1>Choose your journey</h1>
+ </header>
+ <main id="list"></main>
+</div>
+
+<aside class="panel" id="tune" aria-label="Tuning">
+ <h2>Tune · menu v2</h2>
+ <p class="hint">On a phone, tap the gear to open or close this. Values are kept on this device.</p>
+ <label for="order">Order</label>
+ <select id="order"><option value="time">Universe, Earth &amp; Life, Homo sapiens</option><option value="sven">Homo sapiens, Universe, Earth &amp; Life</option></select>
+ <label for="go">Button</label>
+ <select id="go"><option value="solid">Solid white</option><option value="glass">Glass</option><option value="brand">Company red</option></select>
+ <label for="goText">Button text</label>
+ <select id="goText"><option>Travel this story</option><option>Start this journey</option><option>Travel</option></select>
+ <label class="tg">Short overview on the card <input type="checkbox" id="teaser"></label>
+ <label for="redH">How far the red reaches <span id="vredH"></span></label><input id="redH" type="range" min="10" max="60" step="1">
+ <label for="redA">Red strength <span id="vredA"></span></label><input id="redA" type="range" min="0" max="1" step=".05">
+ <label class="tg">Faint stars in the blue <input type="checkbox" id="stars"></label>
+ <label for="gap">Gap between stories <span id="vgap"></span></label><input id="gap" type="range" min="6" max="28" step="1">
+ <div class="tb"><button id="reset">Reset</button></div>
+</aside>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const STORIES={
+ universe:{t:'History of the Universe',s:'13.8 billion years → today',n:72,img:'../menu/img/universe.jpg',pos:'50% 50%',
+  teaser:'The history of everything, from the Big Bang to today: the first stars, the birth of galaxies, our own Milky Way, the Sun and the Earth.'},
+ earth:{t:'History of Earth and Life',s:'4.54 billion years → today',n:56,img:'../menu/img/earth.jpg',pos:'50% 60%',
+  teaser:'The life story of our planet, from a molten ball to the world we know: oceans and continents, the first life, the animals, the dinosaurs and us.'},
+ sapiens:{t:'Story of Homo sapiens',s:'300,000 years → today',n:47,img:'../menu/img/sapiens.jpg',pos:'65% 40%',
+  teaser:'The story of our own species, from its beginnings in Africa to today: how we spread across the world, learned to farm, built cities and wrote it all down.'}
+};
+const ORDERS={time:['universe','earth','sapiens'],sven:['sapiens','universe','earth']};
+const DEF={order:'time',go:'solid',goText:'Travel this story',teaser:false,redH:30,redA:1,stars:true,gap:14};
+let V={...DEF};try{Object.assign(V,JSON.parse(localStorage.getItem('tm-menu2')||'{}'));}catch(e){}
+const arrow='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+function render(){
+ $('list').innerHTML=ORDERS[V.order].map(k=>{const s=STORIES[k];return `<button class="card" style="--pos:${s.pos}" aria-label="${s.t}">
+  <img src="${s.img}" alt=""><div class="scrim"></div>
+  <div class="txt"><div class="t">${s.t}</div><div class="s">${s.s}</div><p class="teaser">${s.teaser}</p>
+  <div class="foot"><span class="n">${s.n} events</span><span class="go">${V.goText}${arrow}</span></div></div></button>`;}).join('');}
+function apply(save){
+ const r=document.documentElement.style;r.setProperty('--redH',V.redH+'%');r.setProperty('--redA',V.redA);r.setProperty('--gap',V.gap+'px');
+ document.body.className='go-'+V.go+(V.teaser?'':' noteaser')+(V.stars?'':' nostars');
+ for(const k of ['order','go','goText','redH','redA','gap'])$(k).value=V[k];$('teaser').checked=V.teaser;$('stars').checked=V.stars;
+ $('vredH').textContent=V.redH+'%';$('vredA').textContent=V.redA;$('vgap').textContent=V.gap+'px';
+ render();if(save)try{localStorage.setItem('tm-menu2',JSON.stringify(V));}catch(e){}}
+for(const k of ['order','go','goText'])$(k).addEventListener('change',e=>{V[k]=e.target.value;apply(true);});
+for(const k of ['redH','redA','gap'])$(k).addEventListener('input',e=>{V[k]=+e.target.value;apply(true);});
+for(const k of ['teaser','stars'])$(k).addEventListener('change',e=>{V[k]=e.target.checked;apply(true);});
+$('reset').onclick=()=>{V={...DEF};try{localStorage.removeItem('tm-menu2');}catch(e){}apply(false);};
+$('gear').onclick=()=>$('tune').classList.toggle('open');
+apply(false);
+</script>
+</body>
+</html>
