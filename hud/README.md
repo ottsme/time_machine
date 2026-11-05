@@ -16,3 +16,8 @@ A working mockup of the new in-trip panels: a small glass panel on top (heading,
 - **Map:** follow-car and whole-road cameras, pan, pinch, wheel and double-tap zoom, compass, re-centre; all pins visible, only the next A-card labelled; tap a passed pin to reopen its card. The map itself is a hand-drawn stand-in for the real Google map.
 - **Text:** logbook of passed cards, current card highlighted sentence by sentence, Next stop line, Back to now.
 - **Card texts are not in this repo** (it is public). `deck_universe.js` holds only positions, headings, dates, tiers and text lengths. Load the private texts file once per device with **Load card texts**; it stays in that browser. Without it, only *The age of dinosaurs* and *Modern Earth* show their text.
+
+## For the app
+
+- [`SVEN.md`](SVEN.md): what the panels show and when (rules H, M, T).
+- [`PORTING.md`](PORTING.md): how to build them in React Native + Expo, phase by phase, with code; also for Sven's AI assistant.
