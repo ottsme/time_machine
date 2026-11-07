@@ -1,3 +1,7 @@
+> **Replaced (2026-11-07).** This page is superseded by the **Technical Rulebook v2.0**, which Ott
+> shares with Sven directly. Its rule IDs (H-, M-, T-) are unchanged there, and several rules were
+> refined. Do not build from this page. `PORTING.md` stays valid as the how-to for the panels' look.
+
 # Glass HUD — how to build it in React Native
 
 *For Sven. Version 3.2, 2026-11-03 (first version 2026-10-19). Reference prototype: https://ottsme.github.io/time_machine/hud/ (code in `hud/index.html`, Map and Text modes in `hud/modes.js`).*
