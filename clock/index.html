@@ -138,7 +138,7 @@ body.sheet #sheet{transform:none}
  <div class="pane" id="p-layout"><div id="layoutCtl"></div>
   <div class="row"><button class="btn" id="reset">Reset all</button><button class="btn" id="copy">Copy values</button></div>
   <textarea id="out" readonly aria-label="Current values"></textarea>
-  <p class="hint">History Clock simulator v1.1. Values are kept on this phone.</p>
+  <p class="hint">History Clock simulator v1.2. Values are kept on this phone.</p>
  </div>
  <div class="pane" id="p-review">
   <h3>This year</h3>
@@ -196,9 +196,10 @@ const PH=[
  y=>`Placeholder line for ${y} at about forty-five`,
  y=>`Placeholder event text for the year ${y}`
 ];
+const STATUS={scheduled:'scheduled',forecast:'scheduled',perhaps:'perhaps',speculation:'perhaps',fact:''};
 function eventOf(y){
- if(EV[y])return {t:EV[y].t,s:EV[y].s||(y>2026?'speculation':''),ph:false};
- return {t:PH[(y*7+Math.floor(y/100))%PH.length](y),s:y>2026?'speculation':'',ph:true};
+ if(EV[y]){const s=EV[y].s;return {t:EV[y].t,s:s!==undefined?(STATUS[s]??''):(y>2026?'perhaps':''),ph:false};}
+ return {t:PH[(y*7+Math.floor(y/100))%PH.length](y),s:y>2026?'perhaps':'',ph:true};
 }
 
 /* ---------- geometry ---------- */
@@ -403,7 +404,7 @@ const LOOK=[
 ];
 const COLS=[
  ['h','Year'],['c_year','Year digits','col'],['c_ad','AD','col'],['o_ad','AD strength','range',0,1,.05],
- ['h','Text'],['c_event','Event text','col'],['o_event','Event text strength','range',.3,1,.05],['c_status','Forecast / speculation label','col'],['o_status','Label strength','range',0,1,.05],
+ ['h','Text'],['c_event','Event text','col'],['o_event','Event text strength','range',.3,1,.05],['c_status','Scheduled / Perhaps label','col'],['o_status','Label strength','range',0,1,.05],
  ['h','Era lines'],['c_bandOn','Current era line','col'],['c_bandOff','Other era lines','col'],['o_bandOff','Other lines strength','range',0,1,.02],
  ['c_now','“Now” tick (2026)','col'],['o_now','“Now” tick strength','range',0,1,.05],['c_marker','Marker ring','col'],
  ['h','Era names'],['c_labOn','Current era name','col'],['c_labOff','Other era names','col'],['o_labOff','Other names strength','range',0,1,.02],
@@ -412,7 +413,7 @@ const COLS=[
 const LAYOUT=[
  ['h','Face size'],['trueSize','True watch size','bool'],['mm','Watch screen diameter (mm)','range',30,46,.5],['pxmm','Phone pixels per mm','range',4,7,.05],['fit','Fit-to-screen size','range',.6,1,.01],
  ['h','Year'],['yearSize','Year size','range',70,150,1],['yearY','Year position','range',90,220,1],
- ['h','Event text'],['eventY','Event position','range',180,300,1],['eventSize','Event text size','range',14,26,.5],['eventW','Event text width','range',240,380,2],['statusGap','Forecast label above text','range',12,40,1],
+ ['h','Event text'],['eventY','Event position','range',180,300,1],['eventSize','Event text size','range',14,26,.5],['eventW','Event text width','range',240,380,2],['statusGap','Scheduled / Perhaps label above text','range',12,40,1],
  ['h','Complications'],['comps','Style','sel',['arc','pills']],['compR','Distance from centre','range',100,180,1],['compD','Circle size','range',48,90,1],['compGap','Spread (degrees)','range',40,180,2]
 ];
 function build(list,host){
