@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>History Clock — simulator</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Cinzel:wght@500;600&family=EB+Garamond:wght@500;600&family=Inter:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;color:#e9eef3;font:14px/1.4 Inter,system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;transition:padding-bottom .25s}
+body.sheet #stage{padding-bottom:58vh;align-items:flex-end}
+#faceBox{position:relative;flex:none}
+#face{position:absolute;left:0;top:0;width:450px;height:450px;transform-origin:0 0;border-radius:50%;overflow:hidden;background:#000;touch-action:pan-y}
+#face>svg{position:absolute;left:0;top:0}
+.comp svg{display:block}
+.lay{position:absolute;left:0;top:0;width:450px;height:450px}
+#yearBox{position:absolute;left:0;width:450px;display:flex;justify-content:center;pointer-events:none}
+#year{position:relative;line-height:1;font-weight:600;font-variant-numeric:lining-nums tabular-nums;letter-spacing:.01em;display:flex;align-items:baseline;white-space:nowrap}
+#ad{position:absolute;right:100%;bottom:.1em;margin-right:.09em;font-family:Inter,sans-serif;font-weight:500;font-size:.15em;letter-spacing:.12em}
+.tk{display:inline-block;position:relative;width:0;height:0}
+.tk i{position:absolute;bottom:.6em;width:.055em;height:.055em;border-radius:50%;margin-left:-.0275em;animation:blink 2s steps(1) infinite}
+@keyframes blink{0%,49%{visibility:visible}50%,100%{visibility:hidden}}
+#status{position:absolute;left:0;width:450px;text-align:center;font-size:11px;font-weight:600;letter-spacing:2.4px}
+#event{position:absolute;left:50%;transform:translateX(-50%);text-align:center;font-weight:500;line-height:1.3;overflow:hidden}
+#event.it{font-style:italic}
+#event.ph{opacity:.62}
+body.ovl #event.over{outline:2px dashed #ff5a4a;outline-offset:4px}
+.comp{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.16);font-weight:600;line-height:1.05}
+.comp small{font-size:9px;letter-spacing:1.5px;opacity:.75;font-weight:600}
+.comp b{font-size:16px;font-weight:600}
+.comp.pill{flex-direction:row;gap:6px;border-radius:17px;height:34px;width:96px;font-size:13px;letter-spacing:1px}
+.comp.pill small{font-size:13px;letter-spacing:1px;opacity:1}
+.comp.pill b{font-size:13px}
+#sponsor{position:absolute;left:0;width:450px;text-align:center}
+#sponsor small{display:block;font-size:10px;letter-spacing:1.6px;opacity:.6;font-weight:500}
+#sponsor b{display:block;margin-top:3px;font-size:13px;font-weight:600;opacity:.85}
+#flagMark{position:absolute;right:-2px;top:-2px;width:14px;height:14px;border-radius:50%;background:#ff9d2e;border:2px solid #000;display:none}
+#flagMark.on{display:block}
+
+#gear{position:fixed;right:calc(14px + env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));width:44px;height:44px;border-radius:22px;border:1px solid rgba(255,255,255,.18);background:rgba(20,22,26,.6);display:flex;align-items:center;justify-content:center;opacity:.45;z-index:5;padding:0}
+#gear svg{width:20px;height:20px;fill:none;stroke:#e9eef3;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+body.sheet #gear{opacity:.9;bottom:calc(56vh - 50px)}
+#sheet{position:fixed;left:0;right:0;bottom:0;height:56vh;background:#16191e;border-top:1px solid #2c3139;border-radius:16px 16px 0 0;transform:translateY(102%);transition:transform .25s;z-index:4;display:flex;flex-direction:column;user-select:auto}
+body.sheet #sheet{transform:none}
+.tabs{display:flex;gap:6px;padding:12px 14px 8px;padding-right:66px}
+.tabs button{flex:1;height:32px;border-radius:8px;border:1px solid #3a414b;background:#262b33;color:#cfd5dc;font:13px Inter,sans-serif}
+.tabs button[aria-pressed="true"]{background:#e9eef3;color:#0b0e12;border-color:#e9eef3}
+.pane{display:none;overflow-y:auto;padding:0 14px calc(18px + env(safe-area-inset-bottom));flex:1}
+.pane.on{display:block}
+.pane h3{margin:14px 0 0;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#7f8994;border-top:1px solid #2c3139;padding-top:12px}
+.pane h3:first-child{border-top:0;padding-top:4px;margin-top:2px}
+.pane label{display:block;margin:10px 0 4px;color:#aeb7c1}
+.pane label span{float:right;font-family:'JetBrains Mono',monospace;color:#fff}
+.pane label.tg{display:flex;align-items:center;justify-content:space-between}
+.pane input[type=range]{width:100%;accent-color:#c41a1a;margin:0}
+.pane select,.pane input[type=color],.pane input[type=number],.pane input[type=text],.pane textarea{width:100%;height:34px;background:#0f1215;color:#fff;border:1px solid #333a43;border-radius:8px;padding:0 8px;font:14px Inter,sans-serif}
+.pane textarea{height:70px;padding:8px;resize:vertical}
+.pane input[type=checkbox]{width:20px;height:20px;accent-color:#c41a1a}
+.hint{margin:6px 0;color:#8f99a4;font-size:12px;line-height:1.45}
+.row{display:flex;gap:8px;margin-top:10px}
+.row>*{flex:1}
+.btn{height:40px;border-radius:8px;border:1px solid #3a414b;background:#262b33;color:#fff;font:14px Inter,sans-serif}
+.btn.pri{background:#9e0303;border-color:#b31b1b}
+#out,#flagOut{width:100%;height:120px;margin-top:10px;background:#0f1215;color:#cfe3ef;border:1px solid #333a43;border-radius:8px;font:11px/1.4 'JetBrains Mono',monospace;padding:8px;display:none}
+#flagList div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08);font-size:13px}
+#flagList b{font-family:'JetBrains Mono',monospace;font-weight:400;color:#fff;flex:none}
+#flagList span{color:#aeb7c1;flex:1}
+#flagList button{flex:none;background:none;border:0;color:#ff7a6a;font:13px Inter,sans-serif;padding:0 4px}
+#clockInfo{font-family:'JetBrains Mono',monospace;color:#fff;font-size:13px;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="stage">
+ <div id="faceBox">
+  <div id="face" role="img" aria-label="History Clock watch face">
+   <svg width="450" height="450" viewBox="0 0 450 450" aria-hidden="true" id="bgSvg">
+    <defs>
+     <radialGradient id="gBase" cx="50%" cy="45%" r="70%"><stop id="sBase0" offset="0"></stop><stop id="sBase1" offset="1"></stop></radialGradient>
+     <radialGradient id="gG1" cx="78%" cy="22%" r="55%"><stop id="sG1a" offset="0"></stop><stop id="sG1b" offset="1" stop-opacity="0"></stop></radialGradient>
+     <radialGradient id="gG2" cx="18%" cy="82%" r="48%"><stop id="sG2a" offset="0"></stop><stop id="sG2b" offset="1" stop-opacity="0"></stop></radialGradient>
+     <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="4" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter>
+    </defs>
+    <g id="bgAll">
+     <rect width="450" height="450" fill="url(#gBase)"></rect>
+     <rect id="rG1" width="450" height="450" fill="url(#gG1)"></rect>
+     <rect id="rG2" width="450" height="450" fill="url(#gG2)"></rect>
+     <rect id="rGrain" width="450" height="450" filter="url(#grain)" style="mix-blend-mode:overlay"></rect>
+     <g id="patA"></g>
+     <g id="patB"></g>
+    </g>
+   </svg>
+   <svg width="450" height="450" viewBox="0 0 450 450" aria-hidden="true" id="ringSvg"></svg>
+   <div class="lay" id="txt">
+    <div id="yearBox"><div id="year"></div></div>
+    <div id="status"></div>
+    <div id="event"></div>
+    <div id="comps"></div>
+    <div id="sponsor"><small>BROUGHT TO YOU BY</small><b>The Original Time Machine</b></div>
+   </div>
+  </div>
+  <div id="flagMark" title="Flagged"></div>
+ </div>
+</div>
+
+<button id="gear" aria-label="Edit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg></button>
+
+<div id="sheet" role="dialog" aria-label="Tuning">
+ <div class="tabs">
+  <button data-tab="time" aria-pressed="true">Time</button>
+  <button data-tab="look" aria-pressed="false">Look</button>
+  <button data-tab="layout" aria-pressed="false">Layout</button>
+  <button data-tab="review" aria-pressed="false">Review</button>
+ </div>
+ <div class="pane on" id="p-time">
+  <h3>Clock</h3>
+  <div id="clockInfo"></div>
+  <label class="tg">Live time (real clock)<input type="checkbox" id="live"></label>
+  <label>Minute of the day <span id="minLbl"></span></label>
+  <input type="range" id="minute" min="0" max="1439" step="1">
+  <div class="row"><button class="btn" id="mBack" aria-label="One minute back">− 1 min</button><button class="btn" id="mFwd" aria-label="One minute forward">+ 1 min</button></div>
+  <label for="jump">Jump to year</label>
+  <div class="row"><input type="number" id="jump" inputmode="numeric" min="0" max="2359" placeholder="e.g. 1632"><button class="btn" id="jumpGo">Go</button></div>
+  <label>Fast-forward</label>
+  <select id="ff"><option value="0">Off</option><option value="1">1 minute per second</option><option value="12">A whole day in 2 minutes</option></select>
+  <p class="hint">Swipe left or right on the face to step one minute. Years ending 60–99 never appear: the clock has no minute 60.</p>
+  <h3>Screen</h3>
+  <label class="tg">Keep screen on<input type="checkbox" id="wake"></label>
+  <div class="row"><button class="btn" id="fs">Full screen</button></div>
+ </div>
+ <div class="pane" id="p-look"><div id="lookCtl"></div></div>
+ <div class="pane" id="p-layout"><div id="layoutCtl"></div>
+  <div class="row"><button class="btn" id="reset">Reset all</button><button class="btn" id="copy">Copy values</button></div>
+  <textarea id="out" readonly aria-label="Current values"></textarea>
+  <p class="hint">History Clock simulator v1.0. Values are kept on this phone.</p>
+ </div>
+ <div class="pane" id="p-review">
+  <h3>This year</h3>
+  <div id="revYear" class="hint"></div>
+  <label for="note">Note</label>
+  <textarea id="note" placeholder="What's wrong or what would be better?"></textarea>
+  <div class="row"><button class="btn pri" id="flag">Flag this year</button></div>
+  <h3>Flagged <span id="flagCount"></span></h3>
+  <div id="flagList"></div>
+  <div class="row"><button class="btn" id="flagCopy">Copy list</button></div>
+  <textarea id="flagOut" readonly aria-label="Flag list"></textarea>
+ </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+
+/* ---------- tunable values ---------- */
+const DEF={
+ accent:'#c9372c', aod:false, bg:true, glow1:0.6, glow2:0.4, grain:0.10, grainScale:0.8, pattern:0.7, fadeMin:10,
+ yearFont:'Cormorant Garamond', tick:'dot', eraLabels:true, overflow:true, placeholders:true,
+ trueSize:false, mm:37, pxmm:5.4, fit:0.92,
+ yearSize:112, yearY:150, eventY:232, eventSize:20, eventW:322, statusGap:22,
+ comps:'arc', compR:148, compD:66, compGap:60
+};
+let V={...DEF};
+try{const s=JSON.parse(localStorage.getItem('hc-sim')||'{}');for(const k in s)if(k in DEF)V[k]=s[k];}catch(e){}
+function save(){try{localStorage.setItem('hc-sim',JSON.stringify({...V,_v:'1.0'}));}catch(e){}}
+
+/* ---------- time ---------- */
+let live=true, manualIdx=0, ff=0;
+try{const t=JSON.parse(localStorage.getItem('hc-time')||'{}');if(t.live===false){live=false;manualIdx=t.idx|0;}}catch(e){}
+function saveTime(){try{localStorage.setItem('hc-time',JSON.stringify({live,idx:manualIdx}));}catch(e){}}
+function nowIdx(){const d=new Date();return d.getHours()*60+d.getMinutes();}
+function curIdx(){return live?nowIdx():manualIdx;}
+const yearOf=i=>Math.floor(i/60)*100+i%60;
+const idxOfYear=y=>Math.floor(y/100)*60+y%100;
+
+/* ---------- events ---------- */
+const EV=window.HC_EVENTS||{};
+const PH=[
+ y=>`Placeholder event, AD ${y}`,
+ y=>`Placeholder for the event of AD ${y}, two lines`,
+ y=>`Placeholder text for AD ${y}, at a typical length`,
+ y=>`A short placeholder, ${y}`,
+ y=>`Worst case for AD ${y}: sixty-four characters fill this line`,
+ y=>`Placeholder line for ${y} at about forty-five`,
+ y=>`Placeholder event text for the year ${y}`
+];
+function eventOf(y){
+ if(EV[y])return {t:EV[y].t,s:EV[y].s||(y>2026?'speculation':''),ph:false};
+ return {t:PH[(y*7+Math.floor(y/100))%PH.length](y),s:y>2026?'speculation':'',ph:true};
+}
+
+/* ---------- geometry ---------- */
+const C=225, R=211, NOWA=(20+26/60)*15;
+const pt=(a,r)=>{a=a*Math.PI/180;return [C+r*Math.sin(a),C-r*Math.cos(a)];};
+function arc(a1,a2,r,ccw){
+ const [x1,y1]=pt(ccw?a2:a1,r),[x2,y2]=pt(ccw?a1:a2,r);
+ return `M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${(a2-a1)>180?1:0} ${ccw?0:1} ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+}
+const BANDS=[['Antiquity',0,75],['Medieval',75,225],['Early modern',225,270],['Modern',270,NOWA],['Future',NOWA,360]];
+function eraOf(i){const a=i/4;for(const b of BANDS)if(a<b[2])return b[0];return 'Future';}
+
+/* ---------- colour keyframes: base, glow 1 (upper right), glow 2 (lower left), ink, pattern ---------- */
+const KF=[
+ [0,   '#16070a','#8f1d17','#8a5a2b','#f2e4cf','#c9a06a'], // Rome: cloak red, leather, bronze
+ [300, '#13060f','#6e1a44','#a07a2a','#f1e2d0','#c9a24a'], // porphyry purple
+ [550, '#0d0816','#4b2a6c','#b08a30','#efe3cf','#d0aa50'], // Byzantine purple and gold
+ [800, '#0a0f0d','#2f4b3a','#8a6a30','#e8e2cc','#b89a5a'], // early medieval moss and bronze
+ [1200,'#080a18','#24307a','#a8842e','#ecdcae','#c9a24a'], // lapis and gold
+ [1450,'#0c0812','#6a1e2a','#2a3a7a','#eedcc0','#c9a24a'], // late medieval crimson
+ [1550,'#0e0905','#6a4a20','#b07a30','#f0dfbc','#e0c48a'], // sepia and candle amber
+ [1700,'#0b0a10','#3a2a4c','#9a6a30','#eedcc0','#d8bf8a'], // enlightenment dusk
+ [1850,'#0a0b0d','#3a4250','#8a4a2a','#e8e4dc','#b8a890'], // soot, steel, copper
+ [1950,'#06090d','#1d3a5a','#1f6a7a','#e6edf3','#9fc3ff'], // steel blue and cyan
+ [2026,'#05070f','#263a6a','#1f6a7a','#e4ebf7','#a8c0ff'], // now
+ [2100,'#030410','#5b3fa8','#1f7a8c','#dfe6ff','#dfe6ff'], // future violet and teal
+ [2359,'#04020c','#7a3a9a','#2a5a9a','#e6e0ff','#e6e0ff']
+].map(k=>[idxOfYear(k[0]),...k.slice(1)]);
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const mixHex=(a,b,t)=>{const A=hex(a),B=hex(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');};
+function colours(i){
+ let k=KF.length-2;for(let n=0;n<KF.length-1;n++)if(i<KF[n+1][0]){k=n;break;}
+ const a=KF[k],b=KF[k+1],t=Math.min(1,Math.max(0,(i-a[0])/(b[0]-a[0])));
+ return {base:mixHex(a[1],b[1],t),g1:mixHex(a[2],b[2],t),g2:mixHex(a[3],b[3],t),ink:mixHex(a[4],b[4],t),pat:mixHex(a[5],b[5],t)};
+}
+
+/* ---------- patterns, one per sub-period; drawn in code so they can fade into each other ---------- */
+const PERIODS=[[0,'meander'],[330,'tesserae'],[600,'knotwork'],[1100,'tracery'],[1500,'starchart'],[1800,'gears'],[1900,'blueprint'],[2027,'starfield']].map(p=>[idxOfYear(p[0]),p[1]]);
+function rnd(seed){let s=seed;return()=>{s=(s*16807)%2147483647;return (s-1)/2147483646;};}
+const PAT={
+ meander(){ // Greek key ring, plus a laurel-like inner hairline
+  const N=34,ri=156,ro=174,u=[[0,0],[0,1],[.8,1],[.8,.2],[.4,.2],[.4,.6],[.6,.6],[.6,.4]];
+  let d='';
+  for(let i=0;i<N;i++){u.forEach(([a,v],j)=>{const [x,y]=pt((i+a)*360/N,ri+v*(ro-ri));d+=(j?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';});
+   const [x,y]=pt((i+1)*360/N,ri);d+='L'+x.toFixed(1)+' '+y.toFixed(1)+' ';}
+  return `<path d="${d}" fill="none" stroke="currentColor" stroke-opacity=".34" stroke-width="2.2" stroke-linejoin="miter"></path>
+  <circle cx="225" cy="225" r="${ri-6}" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"></circle>
+  <circle cx="225" cy="225" r="${ro+5}" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"></circle>`;},
+ tesserae(){ // mosaic: small gold squares, denser toward the rim
+  const r=rnd(11);let s='';
+  for(let x=6;x<450;x+=13)for(let y=6;y<450;y+=13){const dx=x-C,dy=y-C,dd=Math.sqrt(dx*dx+dy*dy);if(dd>180)continue;
+   const o=(0.04+0.22*Math.pow(dd/180,2.2))*(0.5+r());s+=`<rect x="${x}" y="${y}" width="10" height="10" rx="1.5" fill="currentColor" fill-opacity="${o.toFixed(3)}"></rect>`;}
+  return s;},
+ knotwork(){ // braided interlace ring
+  const k=26,paths=[];
+  for(const [amp,ph,rr] of [[6,0,168],[6,Math.PI,168],[4,Math.PI/2,155],[4,-Math.PI/2,155]]){let d='';
+   for(let a=0;a<=360;a+=1.5){const r=rr+amp*Math.sin(k*a*Math.PI/180+ph);const [x,y]=pt(a,r);d+=(a?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';}
+   paths.push(`<path d="${d}Z" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="2"></path>`);}
+  return paths.join('');},
+ tracery(){ // gothic rose window and a faint lattice
+  let s='<g stroke="currentColor" fill="none">';
+  for(let i=0;i<12;i++){const [x,y]=pt(i*30,100);s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="52" stroke-opacity=".09" stroke-width="1"></circle>`;}
+  for(let i=0;i<24;i++){const [x1,y1]=pt(i*15,156),[x2,y2]=pt(i*15,176);s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-opacity=".22" stroke-width="1.2"></line>`;
+   const [ax,ay]=pt(i*15,156),[bx,by]=pt(i*15+7.5,170),[cx,cy]=pt(i*15+15,156);s+=`<path d="M${ax.toFixed(1)} ${ay.toFixed(1)} Q${bx.toFixed(1)} ${by.toFixed(1)} ${cx.toFixed(1)} ${cy.toFixed(1)}" stroke-opacity=".22" stroke-width="1.2"></path>`;}
+  s+=`<circle cx="225" cy="225" r="156" stroke-opacity=".2"></circle><circle cx="225" cy="225" r="178" stroke-opacity=".2"></circle><circle cx="225" cy="225" r="60" stroke-opacity=".12"></circle></g>`;
+  return s;},
+ starchart(){ // engraved celestial chart
+  const r=rnd(7);let s='<g stroke="currentColor" fill="none">';
+  for(let rr=40;rr<180;rr+=34)s+=`<circle cx="225" cy="225" r="${rr}" stroke-opacity=".1"></circle>`;
+  for(let i=0;i<24;i++){const [x1,y1]=pt(i*15,40),[x2,y2]=pt(i*15,176);s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-opacity=".06"></line>`;}
+  s+='<polyline points="118,140 150,118 190,128 214,104" stroke-opacity=".22"></polyline><polyline points="300,330 328,352 356,338" stroke-opacity=".22"></polyline></g>';
+  for(let n=0;n<45;n++)s+=`<circle cx="${(20+r()*410).toFixed(0)}" cy="${(20+r()*410).toFixed(0)}" r="${[.7,1,1.3,1.7][n%4]}" fill="currentColor" fill-opacity="${(.15+r()*.5).toFixed(2)}"></circle>`;
+  return s;},
+ gears(){ // industrial age: cog ring and engraving hatch
+  let d='';const N=60;
+  for(let i=0;i<N;i++){const a=i*360/N,w=360/N;[[a,164],[a+w*.15,176],[a+w*.5,176],[a+w*.65,164]].forEach(([b,r],j)=>{const [x,y]=pt(b,r);d+=((i||j)?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';});}
+  let h='';for(let x=-450;x<450;x+=9)h+=`<line x1="${x}" y1="450" x2="${x+450}" y2="0" stroke="currentColor" stroke-opacity=".035"></line>`;
+  return `${h}<path d="${d}Z" fill="none" stroke="currentColor" stroke-opacity=".28" stroke-width="1.5"></path><circle cx="225" cy="225" r="156" fill="none" stroke="currentColor" stroke-opacity=".14"></circle>`;},
+ blueprint(){ // 20th century: grid and orbit
+  let s='<g stroke="currentColor" stroke-opacity=".08">';for(let x=0;x<=450;x+=22)s+=`<line x1="${x}" y1="0" x2="${x}" y2="450"></line><line x1="0" y1="${x}" x2="450" y2="${x}"></line>`;
+  return s+`</g><ellipse cx="225" cy="225" rx="190" ry="62" transform="rotate(-18 225 225)" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-dasharray="3 4"></ellipse><circle cx="398" cy="168" r="3" fill="currentColor" fill-opacity=".8"></circle>`;},
+ starfield(){
+  const r=rnd(21);let s='';
+  for(let n=0;n<110;n++)s+=`<circle cx="${(15+r()*420).toFixed(0)}" cy="${(15+r()*420).toFixed(0)}" r="${[.6,.8,1,1.2,1.6][n%5]}" fill="currentColor" fill-opacity="${(.15+r()*.6).toFixed(2)}"></circle>`;
+  return s+'<circle cx="225" cy="225" r="178" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-dasharray="2 6"></circle>';}
+};
+const patCache={};const patHTML=k=>patCache[k]||(patCache[k]=PAT[k]());
+let patAk=null,patBk=null;
+function patterns(i,col){
+ let p=0;for(let n=0;n<PERIODS.length;n++)if(i>=PERIODS[n][0])p=n;
+ const cur=PERIODS[p][1],next=PERIODS[p+1];
+ let t=0;if(next&&V.fadeMin>0){const left=next[0]-i;if(left<=V.fadeMin)t=1-left/(V.fadeMin+1);}
+ if(patAk!==cur){$('patA').innerHTML=patHTML(cur);patAk=cur;}
+ const nk=next?next[1]:null;if(patBk!==nk){$('patB').innerHTML=nk?patHTML(nk):'';patBk=nk;}
+ $('patA').style.opacity=(1-t)*V.pattern;$('patB').style.opacity=t*V.pattern;
+ $('patA').style.color=col;$('patB').style.color=col;
+}
+
+/* ---------- ring: era bands, labels, now tick, marker ---------- */
+function ring(i,ink){
+ const era=eraOf(i);let s='';
+ for(const [name,a1,a2] of BANDS){const on=name===era,g=1.4;
+  s+=`<path d="${arc(a1+g,a2-g,R)}" fill="none" stroke="${on?ink:'#fff'}" stroke-opacity="${on?1:.22}" stroke-width="${on?5:3}" stroke-linecap="round"${name==='Future'?' stroke-dasharray="2 5"':''}></path>`;}
+ if(V.eraLabels)BANDS.forEach(([name,a1,a2],n)=>{const on=name===era,mid=(a1+a2)/2,low=mid>90&&mid<270;
+  const d=low?arc(a1+1,a2-1,201,true):arc(a1+1,a2-1,192);
+  s+=`<path id="lab${n}" d="${d}" fill="none"></path><text font-family="Inter,sans-serif" font-size="10" font-weight="600" letter-spacing="2.4" fill="${on?ink:'#fff'}" fill-opacity="${on?.95:.38}"><textPath href="#lab${n}" startOffset="50%" text-anchor="middle">${name.toUpperCase()}</textPath></text>`;});
+ const [x1,y1]=pt(NOWA,R-9),[x2,y2]=pt(NOWA,R+9);
+ s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#fff" stroke-opacity=".75" stroke-width="1.5"></line>`;
+ const [mx,my]=pt(i/4,R);
+ s+=`<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="8" fill="${V.accent}" stroke="#f4ead8" stroke-width="2"></circle>`;
+ $('ringSvg').innerHTML=s;
+}
+
+/* ---------- battery ---------- */
+let batt=null;
+if(navigator.getBattery)navigator.getBattery().then(b=>{batt=b;b.addEventListener('levelchange',draw);draw();}).catch(()=>{});
+const battIcon=c=>`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="2" y="7" width="17" height="10" rx="2"></rect><path d="M22 11v2"></path><rect x="4.5" y="9.5" width="10" height="5" rx="1" fill="${c}" stroke="none"></rect></svg>`;
+
+/* ---------- draw the face ---------- */
+let lastKey='';
+function draw(){
+ const i=curIdx(),y=yearOf(i),h=Math.floor(i/60),m=i%60,col=colours(i),ev=eventOf(y),aod=V.aod;
+ const ink=aod?'#bdbdbd':col.ink, soft=aod?'#9a9a9a':col.ink;
+ // background
+ $('bgAll').style.display=(aod||!V.bg)?'none':'';
+ if(!aod&&V.bg){
+  $('sBase0').setAttribute('stop-color',mixHex(col.base,col.g1,.22));$('sBase1').setAttribute('stop-color',col.base);
+  $('sG1a').setAttribute('stop-color',col.g1);$('sG1b').setAttribute('stop-color',col.g1);
+  $('sG2a').setAttribute('stop-color',col.g2);$('sG2b').setAttribute('stop-color',col.g2);
+  $('rG1').style.opacity=V.glow1;$('rG2').style.opacity=V.glow2;
+  $('rGrain').style.opacity=V.grain;$('turb').setAttribute('baseFrequency',V.grainScale);
+  patterns(i,col.pat);
+ }
+ $('ringSvg').style.opacity=aod?.45:1;
+ ring(i,ink);
+ // year
+ const fam=V.yearFont==='Cinzel'?"'Cinzel',serif":V.yearFont==='Inter'?"Inter,sans-serif":V.yearFont==='EB Garamond'?"'EB Garamond',serif":"'Cormorant Garamond',serif";
+ const yr=$('year');yr.style.fontFamily=fam;yr.style.fontSize=V.yearSize+'px';yr.style.color=ink;
+ const tick=(V.tick==='dot'&&!aod)?`<span class="tk"><i style="background:${V.accent};${h===0?'left:-.11em':''}"></i></span>`:'';
+ const mm=String(m).padStart(2,'0');
+ let digits;
+ if(h===0)digits=`${tick}<span>${m}</span>`;
+ else digits=`<span>${h}</span>${tick}<span style="${V.tick==='muted'?'opacity:.62':''}">${mm}</span>`;
+ yr.innerHTML=`<span id="ad" style="color:${ink};opacity:.45">AD</span>${digits}`;
+ $('yearBox').style.top=(V.yearY-V.yearSize/2)+'px';
+ // status (future only)
+ const st=$('status');st.textContent=ev.s?ev.s.toUpperCase():'';st.style.color=soft;st.style.opacity=.8;
+ st.style.top=(V.eventY-V.statusGap)+'px';
+ // event
+ const e=$('event');e.textContent=(!V.placeholders&&ev.ph)?'':ev.t;
+ e.style.top=V.eventY+'px';e.style.width=V.eventW+'px';e.style.fontSize=V.eventSize+'px';e.style.color=soft;
+ e.classList.toggle('it',y>2026);e.classList.toggle('ph',ev.ph);
+ e.style.maxHeight='none';const over=e.scrollHeight>V.eventSize*1.3*2+2;e.classList.toggle('over',over);
+ e.style.maxHeight=(V.eventSize*1.3*2+2)+'px';
+ // complications or sponsor
+ const sp=$('sponsor'),special=i===0;
+ sp.style.display=special?'':'none';sp.style.color=soft;sp.style.top=(C+V.compR-20)+'px';
+ const cw=$('comps');cw.innerHTML='';
+ if(!aod&&!special){
+  const d=new Date(),dn=d.toLocaleDateString('en-GB',{weekday:'short'}).toUpperCase(),dd=d.getDate();
+  const bl=batt?Math.round(batt.level*100)+'%':'—';
+  if(V.comps==='arc'){
+   const pos=[[180+V.compGap/2,`<small>${dn}</small><b>${dd}</b>`],[180-V.compGap/2,`${battIcon(ink)}<b style="font-size:12px;margin-top:1px">${bl}</b>`]];
+   pos.forEach(([a,html])=>{const [x,yy]=pt(a,V.compR);const c=document.createElement('div');c.className='comp';
+    c.style.cssText+=`left:${x-V.compD/2}px;top:${yy-V.compD/2}px;width:${V.compD}px;height:${V.compD}px;border-radius:50%;color:${ink}`;c.innerHTML=html;cw.appendChild(c);});
+  }else{
+   const top=C+V.compR-17;
+   [[-55,`<small>${dn} ${dd}</small>`],[55,`${battIcon(ink)}<b>${bl}</b>`]].forEach(([dx,html])=>{const c=document.createElement('div');c.className='comp pill';
+    c.style.cssText+=`left:${C+dx-48}px;top:${top}px;color:${ink}`;c.innerHTML=html;cw.appendChild(c);});
+  }
+ }
+ $('flagMark').classList.toggle('on',!!flags[y]);
+ // info texts
+ $('clockInfo').textContent=`${String(h).padStart(2,'0')}:${mm}  =  AD ${y}  ·  ${eraOf(i)}${ev.ph?'  ·  placeholder':''}`;
+ $('minute').value=i;$('minLbl').textContent=`${String(h).padStart(2,'0')}:${mm}`;
+ $('revYear').textContent=`AD ${y} (${String(h).padStart(2,'0')}:${mm}): ${ev.t}`;
+}
+
+/* ---------- sizing ---------- */
+function size(){
+ const sheet=document.body.classList.contains('sheet');
+ const vw=innerWidth,vh=innerHeight*(sheet?0.42:1);
+ let d=V.trueSize?V.mm*V.pxmm:Math.min(vw,vh)*V.fit;
+ const s=d/450;$('face').style.transform=`scale(${s})`;
+ $('faceBox').style.width=d+'px';$('faceBox').style.height=d+'px';
+ $('stage').style.paddingBottom=sheet?(innerHeight*0.56+(innerHeight*0.44-d)/2)+'px':'';
+}
+addEventListener('resize',size);
+
+/* ---------- controls ---------- */
+const LOOK=[
+ ['h','Colour'],['accent','Accent (blinker, marker)','color'],['aod','Always-on mode','bool'],['bg','Background','bool'],
+ ['glow1','Glow, upper right','range',0,1,.05],['glow2','Glow, lower left','range',0,1,.05],
+ ['pattern','Pattern strength','range',0,1.5,.05],['grain','Grain / leather','range',0,.4,.01],['grainScale','Grain size (small = coarse)','range',.1,1.5,.05],
+ ['fadeMin','Pattern change fade (minutes)','range',0,30,1],
+ ['h','Year'],['yearFont','Year typeface','sel',['Cormorant Garamond','Cinzel','EB Garamond','Inter']],['tick','Blinker','sel',['dot','muted','none']],
+ ['h','Show'],['eraLabels','Era names on the bezel','bool'],['placeholders','Placeholder texts','bool'],['overflow','Mark texts over two lines','bool']
+];
+const LAYOUT=[
+ ['h','Face size'],['trueSize','True watch size','bool'],['mm','Watch screen diameter (mm)','range',30,46,.5],['pxmm','Phone pixels per mm','range',4,7,.05],['fit','Fit-to-screen size','range',.6,1,.01],
+ ['h','Year'],['yearSize','Year size','range',70,150,1],['yearY','Year position','range',90,220,1],
+ ['h','Event text'],['eventY','Event position','range',180,300,1],['eventSize','Event text size','range',14,26,.5],['eventW','Event text width','range',240,380,2],['statusGap','Forecast label above text','range',12,40,1],
+ ['h','Complications'],['comps','Style','sel',['arc','pills']],['compR','Distance from centre','range',100,180,1],['compD','Circle size','range',48,90,1],['compGap','Spread (degrees)','range',40,180,2]
+];
+function build(list,host){
+ host.innerHTML='';
+ for(const [k,lab,type,a,b,st] of list){
+  if(k==='h'){const h=document.createElement('h3');h.textContent=lab;host.appendChild(h);continue;}
+  const L=document.createElement('label');
+  if(type==='bool'){L.className='tg';L.textContent=lab;const c=document.createElement('input');c.type='checkbox';c.checked=!!V[k];c.onchange=()=>{V[k]=c.checked;apply();};L.appendChild(c);host.appendChild(L);continue;}
+  if(type==='range'){const sp=document.createElement('span');sp.textContent=V[k];L.textContent=lab;L.appendChild(sp);host.appendChild(L);
+   const r=document.createElement('input');r.type='range';r.min=a;r.max=b;r.step=st;r.value=V[k];r.oninput=()=>{V[k]=+r.value;sp.textContent=r.value;apply();};host.appendChild(r);continue;}
+  L.textContent=lab;host.appendChild(L);
+  if(type==='color'){const c=document.createElement('input');c.type='color';c.value=V[k];c.oninput=()=>{V[k]=c.value;apply();};host.appendChild(c);}
+  if(type==='sel'){const s=document.createElement('select');a.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;s.appendChild(op);});s.value=V[k];s.onchange=()=>{V[k]=s.value;apply();};host.appendChild(s);}
+ }
+}
+function apply(){document.body.classList.toggle('ovl',V.overflow);save();size();draw();}
+build(LOOK,$('lookCtl'));build(LAYOUT,$('layoutCtl'));
+$('reset').onclick=()=>{V={...DEF};try{localStorage.removeItem('hc-sim');}catch(e){}build(LOOK,$('lookCtl'));build(LAYOUT,$('layoutCtl'));apply();};
+$('copy').onclick=()=>{const t=JSON.stringify(V,null,1);const o=$('out');o.style.display='block';o.value=t;
+ try{navigator.clipboard.writeText(t);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy values',1500);}catch(e){}};
+
+/* time controls */
+function setManual(i){live=false;manualIdx=((i%1440)+1440)%1440;$('live').checked=false;saveTime();draw();}
+$('live').checked=live;
+$('live').onchange=()=>{live=$('live').checked;if(!live)manualIdx=nowIdx();ff=0;$('ff').value='0';saveTime();draw();};
+$('minute').oninput=()=>setManual(+$('minute').value);
+$('mBack').onclick=()=>setManual(curIdx()-1);
+$('mFwd').onclick=()=>setManual(curIdx()+1);
+$('jumpGo').onclick=()=>{const y=parseInt($('jump').value,10);
+ if(isNaN(y)||y<0||y>2359||y%100>59){$('jump').value='';$('jump').placeholder='0–2359, ending 00–59';return;}setManual(idxOfYear(y));};
+$('ff').onchange=()=>{ff=+$('ff').value;if(ff&&live){manualIdx=nowIdx();live=false;$('live').checked=false;}};
+let sx=null;
+$('face').addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
+$('face').addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx;sx=null;if(Math.abs(dx)>40)setManual(curIdx()+(dx<0?1:-1));});
+
+/* screen */
+let lock=null;
+async function wake(on){try{if(on&&'wakeLock' in navigator){lock=await navigator.wakeLock.request('screen');}else if(lock){await lock.release();lock=null;}}catch(e){}}
+$('wake').checked=localStorage.getItem('hc-wake')!=='0';
+$('wake').onchange=()=>{try{localStorage.setItem('hc-wake',$('wake').checked?'1':'0');}catch(e){}wake($('wake').checked);};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&$('wake').checked)wake(true);});
+wake($('wake').checked);
+$('fs').onclick=()=>{const d=document.documentElement;if(document.fullscreenElement)document.exitFullscreen();else if(d.requestFullscreen)d.requestFullscreen().catch(()=>{});};
+
+/* sheet and tabs */
+$('gear').onclick=()=>{document.body.classList.toggle('sheet');size();};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+ document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+b.dataset.tab));});
+
+/* review flags */
+let flags={};try{flags=JSON.parse(localStorage.getItem('hc-flags')||'{}');}catch(e){}
+function saveFlags(){try{localStorage.setItem('hc-flags',JSON.stringify(flags));}catch(e){}}
+function listFlags(){
+ const keys=Object.keys(flags).map(Number).sort((a,b)=>a-b);$('flagCount').textContent=keys.length?`(${keys.length})`:'';
+ const L=$('flagList');L.innerHTML='';
+ keys.forEach(y=>{const r=document.createElement('div');r.innerHTML=`<b>${y}</b><span></span><button aria-label="Remove flag ${y}">Remove</button>`;
+  r.querySelector('span').textContent=flags[y].note||eventOf(y).t;
+  r.querySelector('b').onclick=()=>setManual(idxOfYear(y));
+  r.querySelector('button').onclick=()=>{delete flags[y];saveFlags();listFlags();draw();};L.appendChild(r);});
+}
+$('flag').onclick=()=>{const y=yearOf(curIdx());flags[y]={note:$('note').value.trim(),text:eventOf(y).t};$('note').value='';saveFlags();listFlags();draw();};
+$('flagCopy').onclick=()=>{const t=Object.keys(flags).map(Number).sort((a,b)=>a-b).map(y=>`${y}\t${flags[y].text}\t${flags[y].note||''}`).join('\n');
+ const o=$('flagOut');o.style.display='block';o.value=t;try{navigator.clipboard.writeText(t);$('flagCopy').textContent='Copied';setTimeout(()=>$('flagCopy').textContent='Copy list',1500);}catch(e){}};
+listFlags();
+
+/* ---------- tick ---------- */
+let acc=0,lastT=performance.now(),lastDrawn=-1;
+function loop(t){
+ const dt=(t-lastT)/1000;lastT=t;
+ if(ff&&!live){acc+=dt*ff;if(acc>=1){const n=Math.floor(acc);acc-=n;manualIdx=(manualIdx+n)%1440;}}
+ const i=curIdx();if(i!==lastDrawn){lastDrawn=i;draw();if(!ff)saveTime();}
+ requestAnimationFrame(loop);
+}
+apply();requestAnimationFrame(loop);
+if(document.fonts)document.fonts.ready.then(draw);
+</script>
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));</script>
+</body>
+</html>
