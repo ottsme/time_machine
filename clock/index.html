@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Cinzel:wght@500;600&family=EB+Garamond:wght@500;600&family=Inter:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Cinzel:wght@500;600&family=EB+Garamond:wght@500;600&family=Inter:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#000;color:#e9eef3;font:14px/1.4 Inter,system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -26,9 +26,10 @@ body.sheet #stage{padding-bottom:58vh;align-items:flex-end}
 .tk{display:inline-block;position:relative;width:0;height:0}
 .tk i{position:absolute;bottom:.6em;width:.055em;height:.055em;border-radius:50%;margin-left:-.0275em;animation:blink 2s steps(1) infinite}
 @keyframes blink{0%,49%{visibility:visible}50%,100%{visibility:hidden}}
-#status{position:absolute;left:0;width:450px;text-align:center;font-size:11px;font-weight:600;letter-spacing:2.4px}
+#status{position:absolute;left:0;width:450px;text-align:center;font-style:italic;text-transform:uppercase}
+#status.serif{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;letter-spacing:2px}
+#status.sans{font-family:Inter,sans-serif;font-size:11px;font-weight:500;letter-spacing:2.2px}
 #event{position:absolute;left:50%;transform:translateX(-50%);text-align:center;font-weight:500;line-height:1.3;overflow:hidden}
-#event.it{font-style:italic}
 body.ovl #event.over{outline:2px dashed #ff5a4a;outline-offset:4px}
 .comp{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.16);font-weight:600;line-height:1.05}
 .comp small{font-size:9px;letter-spacing:1.5px;opacity:.75;font-weight:600}
@@ -39,6 +40,7 @@ body.ovl #event.over{outline:2px dashed #ff5a4a;outline-offset:4px}
 #sponsor{position:absolute;left:0;width:450px;text-align:center}
 #sponsor small{display:block;font-size:10px;letter-spacing:1.6px;opacity:.6;font-weight:500}
 #sponsor b{display:block;margin-top:3px;font-size:13px;font-weight:600;opacity:.85}
+#secGlow *{stroke-opacity:.9;fill-opacity:.9}
 #flagMark{position:absolute;right:-2px;top:-2px;width:14px;height:14px;border-radius:50%;background:#ff9d2e;border:2px solid #000;display:none}
 #flagMark.on{display:block}
 
@@ -83,6 +85,8 @@ body.sheet #sheet{transform:none}
      <radialGradient id="gBase" cx="50%" cy="45%" r="70%"><stop id="sBase0" offset="0"></stop><stop id="sBase1" offset="1"></stop></radialGradient>
      <radialGradient id="gG1" cx="78%" cy="22%" r="55%"><stop id="sG1a" offset="0"></stop><stop id="sG1b" offset="1" stop-opacity="0"></stop></radialGradient>
      <radialGradient id="gG2" cx="18%" cy="82%" r="48%"><stop id="sG2a" offset="0"></stop><stop id="sG2b" offset="1" stop-opacity="0"></stop></radialGradient>
+     <filter id="glowBlur" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter>
+     <mask id="secMask" maskUnits="userSpaceOnUse" x="0" y="0" width="450" height="450"><g id="secWedge"></g></mask>
      <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="4" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter>
     </defs>
     <g id="bgAll">
@@ -92,6 +96,7 @@ body.sheet #sheet{transform:none}
      <rect id="rGrain" width="450" height="450" filter="url(#grain)" style="mix-blend-mode:overlay"></rect>
      <g id="patA"></g>
      <g id="patB"></g>
+     <g id="secGlow" mask="url(#secMask)"><g filter="url(#glowBlur)"><g id="glowA"></g><g id="glowB"></g></g></g>
     </g>
    </svg>
    <svg width="450" height="450" viewBox="0 0 450 450" aria-hidden="true" id="ringSvg"></svg>
@@ -138,7 +143,7 @@ body.sheet #sheet{transform:none}
  <div class="pane" id="p-layout"><div id="layoutCtl"></div>
   <div class="row"><button class="btn" id="reset">Reset all</button><button class="btn" id="copy">Copy values</button></div>
   <textarea id="out" readonly aria-label="Current values"></textarea>
-  <p class="hint">History Clock simulator v1.3. Values are kept on this phone.</p>
+  <p class="hint">History Clock simulator v1.4. Values are kept on this phone.</p>
  </div>
  <div class="pane" id="p-review">
   <h3>This year</h3>
@@ -149,6 +154,9 @@ body.sheet #sheet{transform:none}
   <h3>Flagged <span id="flagCount"></span></h3>
   <div id="flagList"></div>
   <div class="row"><button class="btn" id="flagCopy">Copy list</button></div>
+  <div class="row"><button class="btn" id="flagSave">Save notes to file</button><button class="btn" id="flagLoad">Load notes from file</button></div>
+  <input type="file" id="flagFile" accept=".json,application/json" style="display:none">
+  <p class="hint" id="flagMsg">Notes are kept in this browser only. Save them to a file now and then, and load the file to move them between the app and Chrome.</p>
   <textarea id="flagOut" readonly aria-label="Flag list"></textarea>
  </div>
 </div>
@@ -162,10 +170,11 @@ const NS='http://www.w3.org/2000/svg';
 /* ---------- tunable values ---------- */
 const DEF={
  accent:'#c9372c', aod:false, bg:true, glow1:0.6, glow2:0.4, grain:0.10, grainScale:0.8, pattern:0.7, fadeMin:10,
- yearFont:'Cormorant Garamond', tick:'dot', eraLabels:true, overflow:true, placeholders:true,
+ yearFont:'Cormorant Garamond', labelFont:'serif', tick:'dot', secGlow:true, glowStr:0.7, glowTail:100, eraLabels:true, overflow:true, placeholders:true,
  trueSize:false, mm:37, pxmm:5.4, fit:0.92,
  yearSize:112, yearY:150, eventY:232, eventSize:20, eventW:322, statusGap:22,
- comps:'arc', compR:148, compD:66, compGap:60,
+ friezeR:186, friezeW:14, textGap:6,
+ comps:'arc', compR:136, compD:66, compGap:60,
  // colours: '' = automatic (follows the era colour drift), otherwise a fixed colour
  c_year:'', c_ad:'', c_event:'', c_status:'', c_bandOn:'', c_bandOff:'#ffffff', c_labOn:'', c_labOff:'#ffffff', c_now:'#ffffff', c_marker:'#f4ead8',
  c_compText:'', c_compBorder:'#ffffff', c_compFill:'#000000',
@@ -236,66 +245,121 @@ function colours(i){
  return {base:mixHex(a[1],b[1],t),g1:mixHex(a[2],b[2],t),g2:mixHex(a[3],b[3],t),ink:mixHex(a[4],b[4],t),pat:mixHex(a[5],b[5],t)};
 }
 
-/* ---------- patterns, one per sub-period; drawn in code so they can fade into each other ---------- */
-const PERIODS=[[0,'meander'],[330,'tesserae'],[600,'knotwork'],[1100,'tracery'],[1500,'starchart'],[1800,'gears'],[1900,'blueprint'],[2027,'starfield']].map(p=>[idxOfYear(p[0]),p[1]]);
+/* ---------- the frieze and the field: one design per sub-period, drawn in code so they can fade into each other ----------
+   Each design has a ring (the frieze, between radii fi and fo, which the text never crosses)
+   and an optional faint field texture inside it. The seconds glow lights up the frieze only. */
+const PERIODS=[[0,'laurel'],[200,'meander'],[330,'tesserae'],[600,'knotwork'],[1100,'tracery'],[1500,'starchart'],[1800,'gears'],[1900,'blueprint'],[2027,'orbits']].map(p=>[idxOfYear(p[0]),p[1]]);
 function rnd(seed){let s=seed;return()=>{s=(s*16807)%2147483647;return (s-1)/2147483646;};}
+const f1=n=>n.toFixed(1);
+const circ=(r,att)=>`<circle cx="225" cy="225" r="${f1(r)}" fill="none" stroke="currentColor" ${att}></circle>`;
 const PAT={
- meander(){ // Greek key ring, plus a laurel-like inner hairline
-  const N=34,ri=156,ro=174,u=[[0,0],[0,1],[.8,1],[.8,.2],[.4,.2],[.4,.6],[.6,.6],[.6,.4]];
+ laurel(fi,fo){ // Roman imperial laurel wreath: two branches rising from a tie at the bottom, tips meeting at the top
+  const mid=(fi+fo)/2,L=Math.max(8,(fo-fi)*1.1),W=L*0.4;let s='';
+  const leaf=(a,dir,side)=>{ // a: angle on the circle; dir: +1 clockwise growth, -1 anticlockwise; side: +1 outward, -1 inward
+   const [bx,by]=pt(a,mid+side*1.2),ar=a*Math.PI/180;
+   const tx=Math.cos(ar)*dir,ty=Math.sin(ar)*dir,nx=Math.sin(ar)*side,ny=-Math.cos(ar)*side; // tangent (growth) and normal
+   const k=.5,ax=tx+nx*k,ay=ty+ny*k,al=Math.hypot(ax,ay),ux=ax/al,uy=ay/al,px=-uy,py=ux;
+   const ex=bx+ux*L,ey=by+uy*L,mx=bx+ux*L/2,my=by+uy*L/2;
+   return `<path d="M${f1(bx)} ${f1(by)}Q${f1(mx+px*W)} ${f1(my+py*W)} ${f1(ex)} ${f1(ey)}Q${f1(mx-px*W)} ${f1(my-py*W)} ${f1(bx)} ${f1(by)}Z"></path>`;};
+  const step=3.6,gap=6;
+  for(const dir of [1,-1]){ // right branch grows anticlockwise from 180 to the top, left branch clockwise
+   const a0=180,a1=dir>0?360-gap:gap;
+   s+=`<path d="${arc(dir>0?a0:a1,dir>0?a1:a0,mid)}" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="1.1"></path>`;
+   for(let k=0,a=a0+dir*6;dir>0?a<a1-3:a>a1+3;k++,a+=dir*step){
+    s+=leaf(a,dir,k%2?1:-1);
+    if(k%7===3){const [cx,cy]=pt(a+dir*1.5,mid+(k%2?-1:1)*(fo-fi)*.32);s+=`<circle cx="${f1(cx)}" cy="${f1(cy)}" r="1.4"></circle>`;}
+   }
+  }
+  const [x1,y1]=pt(172,fi-1),[x2,y2]=pt(188,fo+1),[x3,y3]=pt(188,fi-1),[x4,y4]=pt(172,fo+1); // the tie
+  s+=`<path d="M${f1(x1)} ${f1(y1)}L${f1(x2)} ${f1(y2)}M${f1(x3)} ${f1(y3)}L${f1(x4)} ${f1(y4)}" stroke="currentColor" stroke-opacity=".38" stroke-width="1.4" fill="none"></path>`;
+  return {ring:`<g fill="currentColor" fill-opacity=".34">${s}</g>`,field:''};},
+ meander(fi,fo){ // Greek key
+  const N=Math.round(2*Math.PI*(fi+fo)/2/((fo-fi)*1.75)),ri=fi+1,ro=fo-1,u=[[0,0],[0,1],[.8,1],[.8,.2],[.4,.2],[.4,.6],[.6,.6],[.6,.4]];
   let d='';
-  for(let i=0;i<N;i++){u.forEach(([a,v],j)=>{const [x,y]=pt((i+a)*360/N,ri+v*(ro-ri));d+=(j?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';});
-   const [x,y]=pt((i+1)*360/N,ri);d+='L'+x.toFixed(1)+' '+y.toFixed(1)+' ';}
-  return `<path d="${d}" fill="none" stroke="currentColor" stroke-opacity=".34" stroke-width="2.2" stroke-linejoin="miter"></path>
-  <circle cx="225" cy="225" r="${ri-6}" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"></circle>
-  <circle cx="225" cy="225" r="${ro+5}" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"></circle>`;},
- tesserae(){ // mosaic: small gold squares, denser toward the rim
-  const r=rnd(11);let s='';
-  for(let x=6;x<450;x+=13)for(let y=6;y<450;y+=13){const dx=x-C,dy=y-C,dd=Math.sqrt(dx*dx+dy*dy);if(dd>180)continue;
-   const o=(0.04+0.22*Math.pow(dd/180,2.2))*(0.5+r());s+=`<rect x="${x}" y="${y}" width="10" height="10" rx="1.5" fill="currentColor" fill-opacity="${o.toFixed(3)}"></rect>`;}
-  return s;},
- knotwork(){ // braided interlace ring
-  const k=26,paths=[];
-  for(const [amp,ph,rr] of [[6,0,168],[6,Math.PI,168],[4,Math.PI/2,155],[4,-Math.PI/2,155]]){let d='';
-   for(let a=0;a<=360;a+=1.5){const r=rr+amp*Math.sin(k*a*Math.PI/180+ph);const [x,y]=pt(a,r);d+=(a?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';}
-   paths.push(`<path d="${d}Z" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-width="2"></path>`);}
-  return paths.join('');},
- tracery(){ // gothic rose window and a faint lattice
-  let s='<g stroke="currentColor" fill="none">';
-  for(let i=0;i<12;i++){const [x,y]=pt(i*30,100);s+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="52" stroke-opacity=".09" stroke-width="1"></circle>`;}
-  for(let i=0;i<24;i++){const [x1,y1]=pt(i*15,156),[x2,y2]=pt(i*15,176);s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-opacity=".22" stroke-width="1.2"></line>`;
-   const [ax,ay]=pt(i*15,156),[bx,by]=pt(i*15+7.5,170),[cx,cy]=pt(i*15+15,156);s+=`<path d="M${ax.toFixed(1)} ${ay.toFixed(1)} Q${bx.toFixed(1)} ${by.toFixed(1)} ${cx.toFixed(1)} ${cy.toFixed(1)}" stroke-opacity=".22" stroke-width="1.2"></path>`;}
-  s+=`<circle cx="225" cy="225" r="156" stroke-opacity=".2"></circle><circle cx="225" cy="225" r="178" stroke-opacity=".2"></circle><circle cx="225" cy="225" r="60" stroke-opacity=".12"></circle></g>`;
-  return s;},
- starchart(){ // engraved celestial chart
-  const r=rnd(7);let s='<g stroke="currentColor" fill="none">';
-  for(let rr=40;rr<180;rr+=34)s+=`<circle cx="225" cy="225" r="${rr}" stroke-opacity=".1"></circle>`;
-  for(let i=0;i<24;i++){const [x1,y1]=pt(i*15,40),[x2,y2]=pt(i*15,176);s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-opacity=".06"></line>`;}
-  s+='<polyline points="118,140 150,118 190,128 214,104" stroke-opacity=".22"></polyline><polyline points="300,330 328,352 356,338" stroke-opacity=".22"></polyline></g>';
-  for(let n=0;n<45;n++)s+=`<circle cx="${(20+r()*410).toFixed(0)}" cy="${(20+r()*410).toFixed(0)}" r="${[.7,1,1.3,1.7][n%4]}" fill="currentColor" fill-opacity="${(.15+r()*.5).toFixed(2)}"></circle>`;
-  return s;},
- gears(){ // industrial age: cog ring and engraving hatch
-  let d='';const N=60;
-  for(let i=0;i<N;i++){const a=i*360/N,w=360/N;[[a,164],[a+w*.15,176],[a+w*.5,176],[a+w*.65,164]].forEach(([b,r],j)=>{const [x,y]=pt(b,r);d+=((i||j)?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';});}
-  let h='';for(let x=-450;x<450;x+=9)h+=`<line x1="${x}" y1="450" x2="${x+450}" y2="0" stroke="currentColor" stroke-opacity=".035"></line>`;
-  return `${h}<path d="${d}Z" fill="none" stroke="currentColor" stroke-opacity=".28" stroke-width="1.5"></path><circle cx="225" cy="225" r="156" fill="none" stroke="currentColor" stroke-opacity=".14"></circle>`;},
- blueprint(){ // 20th century: grid and orbit
-  let s='<g stroke="currentColor" stroke-opacity=".08">';for(let x=0;x<=450;x+=22)s+=`<line x1="${x}" y1="0" x2="${x}" y2="450"></line><line x1="0" y1="${x}" x2="450" y2="${x}"></line>`;
-  return s+`</g><ellipse cx="225" cy="225" rx="190" ry="62" transform="rotate(-18 225 225)" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-dasharray="3 4"></ellipse><circle cx="398" cy="168" r="3" fill="currentColor" fill-opacity=".8"></circle>`;},
- starfield(){
-  const r=rnd(21);let s='';
-  for(let n=0;n<110;n++)s+=`<circle cx="${(15+r()*420).toFixed(0)}" cy="${(15+r()*420).toFixed(0)}" r="${[.6,.8,1,1.2,1.6][n%5]}" fill="currentColor" fill-opacity="${(.15+r()*.6).toFixed(2)}"></circle>`;
-  return s+'<circle cx="225" cy="225" r="178" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-dasharray="2 6"></circle>';}
+  for(let i=0;i<N;i++){u.forEach(([a,v],j)=>{const [x,y]=pt((i+a)*360/N,ri+v*(ro-ri));d+=(j?'L':'M')+f1(x)+' '+f1(y)+' ';});
+   const [x,y]=pt((i+1)*360/N,ri);d+='L'+f1(x)+' '+f1(y)+' ';}
+  return {ring:`<path d="${d}" fill="none" stroke="currentColor" stroke-opacity=".36" stroke-width="1.8" stroke-linejoin="miter"></path>${circ(fi-3,'stroke-opacity=".16" stroke-width="1"')}${circ(fo+3,'stroke-opacity=".16" stroke-width="1"')}`,field:''};},
+ tesserae(fi,fo){ // mosaic: a band of gold tesserae, and a faint field of them inside
+  const r=rnd(11);let ring='',field='';
+  const rows=2,h=(fo-fi)/rows;
+  for(let row=0;row<rows;row++){const rr=fi+h*(row+.5),n=Math.round(2*Math.PI*rr/h),sz=h*.78;
+   for(let i=0;i<n;i++){const a=(i+(row?.5:0))*360/n,[x,y]=pt(a,rr);
+    ring+=`<rect x="${f1(x-sz/2)}" y="${f1(y-sz/2)}" width="${f1(sz)}" height="${f1(sz)}" rx="1" transform="rotate(${f1(a)} ${f1(x)} ${f1(y)})" fill="currentColor" fill-opacity="${(.22+r()*.24).toFixed(2)}"></rect>`;}}
+  for(let x=6;x<450;x+=13)for(let y=6;y<450;y+=13){const dx=x-C,dy=y-C,dd=Math.sqrt(dx*dx+dy*dy);if(dd>fi-10)continue;
+   const o=(0.03+0.12*Math.pow(dd/fi,2.4))*(0.5+r());field+=`<rect x="${x}" y="${y}" width="10" height="10" rx="1.5" fill="currentColor" fill-opacity="${o.toFixed(3)}"></rect>`;}
+  return {ring,field};},
+ knotwork(fi,fo){ // braided interlace
+  const mid=(fi+fo)/2,A=(fo-fi)/2-1,k=Math.round(2*Math.PI*mid/(fo-fi)/1.6);let s='';
+  for(const [amp,ph] of [[A,0],[A,Math.PI],[A*.55,Math.PI/2],[A*.55,-Math.PI/2]]){let d='';
+   for(let a=0;a<=360;a+=1){const r=mid+amp*Math.sin(k*a*Math.PI/180+ph);const [x,y]=pt(a,r);d+=(a?'L':'M')+f1(x)+' '+f1(y)+' ';}
+   s+=`<path d="${d}Z" fill="none" stroke="currentColor" stroke-opacity=".32" stroke-width="1.7"></path>`;}
+  return {ring:s,field:''};},
+ tracery(fi,fo){ // Gothic arcade in the frieze, a faint rose window in the field
+  let ring='<g stroke="currentColor" fill="none" stroke-opacity=".26" stroke-width="1.2">',field='<g stroke="currentColor" fill="none">';
+  for(let i=0;i<24;i++){const [x1,y1]=pt(i*15,fi),[x2,y2]=pt(i*15,fo);ring+=`<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}"></line>`;
+   const [ax,ay]=pt(i*15,fi),[bx,by]=pt(i*15+7.5,fo-1),[cx,cy]=pt(i*15+15,fi);ring+=`<path d="M${f1(ax)} ${f1(ay)}Q${f1(bx)} ${f1(by)} ${f1(cx)} ${f1(cy)}"></path>`;}
+  ring+=`</g>${circ(fi,'stroke-opacity=".22"')}${circ(fo,'stroke-opacity=".22"')}`;
+  const rr=(fi-12)*.62,cr=(fi-12)-rr;
+  for(let i=0;i<12;i++){const [x,y]=pt(i*30,rr);field+=`<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(cr)}" stroke-opacity=".08" stroke-width="1"></circle>`;}
+  field+=`<circle cx="225" cy="225" r="60" stroke-opacity=".1"></circle></g>`;
+  return {ring,field};},
+ starchart(fi,fo){ // astrolabe limb with graduations; engraved chart in the field
+  const r=rnd(7);let ring=`${circ(fi,'stroke-opacity=".24"')}${circ(fo,'stroke-opacity=".24"')}<g stroke="currentColor" stroke-opacity=".3">`;
+  for(let a=0;a<360;a+=3){const big=a%15===0,[x1,y1]=pt(a,fo),[x2,y2]=pt(a,big?fi:fo-(fo-fi)*.42);ring+=`<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" stroke-width="${big?1.2:.8}"></line>`;}
+  ring+='</g>';
+  let field='<g stroke="currentColor" fill="none">';
+  for(let rr=40;rr<fi-8;rr+=34)field+=`<circle cx="225" cy="225" r="${rr}" stroke-opacity=".08"></circle>`;
+  for(let i=0;i<24;i++){const [x1,y1]=pt(i*15,40),[x2,y2]=pt(i*15,fi-4);field+=`<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" stroke-opacity=".05"></line>`;}
+  field+='<polyline points="118,140 150,118 190,128 214,104" stroke-opacity=".2"></polyline><polyline points="300,330 328,352 356,338" stroke-opacity=".2"></polyline></g>';
+  for(let n=0;n<40;n++){const a=r()*360,d=Math.sqrt(r())*(fi-10),[x,y]=pt(a,d);field+=`<circle cx="${f1(x)}" cy="${f1(y)}" r="${[.7,1,1.3,1.7][n%4]}" fill="currentColor" fill-opacity="${(.15+r()*.45).toFixed(2)}"></circle>`;}
+  return {ring,field};},
+ gears(fi,fo){ // industrial age: cog ring, engraving hatch in the field
+  let d='';const N=Math.round(2*Math.PI*fo/18);
+  for(let i=0;i<N;i++){const a=i*360/N,w=360/N;[[a,fi+2],[a+w*.15,fo],[a+w*.5,fo],[a+w*.65,fi+2]].forEach(([b,r],j)=>{const [x,y]=pt(b,r);d+=((i||j)?'L':'M')+f1(x)+' '+f1(y)+' ';});}
+  let h='';for(let x=-450;x<450;x+=9)h+=`<line x1="${x}" y1="450" x2="${x+450}" y2="0" stroke="currentColor" stroke-opacity=".03"></line>`;
+  return {ring:`<path d="${d}Z" fill="none" stroke="currentColor" stroke-opacity=".32" stroke-width="1.5"></path>${circ(fi-2,'stroke-opacity=".16"')}`,field:h};},
+ blueprint(fi,fo){ // 20th century: a drafting scale in the frieze; grid and orbit in the field
+  const mid=(fi+fo)/2;let ring=`${circ(mid,'stroke-opacity=".3" stroke-width="1"')}${circ(fo,'stroke-opacity=".16" stroke-dasharray="6 3 1 3"')}<g stroke="currentColor" stroke-opacity=".3">`;
+  for(let a=0;a<360;a+=2.5){const big=a%15===0,[x1,y1]=pt(a,mid),[x2,y2]=pt(a,big?fi:mid-(mid-fi)*.6);ring+=`<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" stroke-width="${big?1.2:.8}"></line>`;}
+  ring+='</g>';
+  let field='<g stroke="currentColor" stroke-opacity=".07">';for(let x=0;x<=450;x+=22)field+=`<line x1="${x}" y1="0" x2="${x}" y2="450"></line><line x1="0" y1="${x}" x2="450" y2="${x}"></line>`;
+  field+=`</g><ellipse cx="225" cy="225" rx="${fi-10}" ry="${f1((fi-10)*.33)}" transform="rotate(-18 225 225)" fill="none" stroke="currentColor" stroke-opacity=".2" stroke-dasharray="3 4"></ellipse>`;
+  const [px,py]=[225+(fi-10)*Math.cos(-18*Math.PI/180),225+(fi-10)*Math.sin(-18*Math.PI/180)];field+=`<circle cx="${f1(px)}" cy="${f1(py)}" r="3" fill="currentColor" fill-opacity=".7"></circle>`;
+  return {ring,field};},
+ orbits(fi,fo){ // the future: two orbits with travelling bodies; a starfield inside
+  const r=rnd(21);let ring=`${circ(fi+(fo-fi)*.25,'stroke-opacity=".22" stroke-width=".9"')}${circ(fo-(fo-fi)*.2,'stroke-opacity=".3" stroke-width=".9" stroke-dasharray="1 4" stroke-linecap="round"')}`;
+  [[20,fi+(fo-fi)*.25,2.2],[140,fo-(fo-fi)*.2,3],[250,fi+(fo-fi)*.25,1.8],[315,fo-(fo-fi)*.2,2.4]].forEach(([a,rr,sz])=>{const [x,y]=pt(a,rr);ring+=`<circle cx="${f1(x)}" cy="${f1(y)}" r="${sz}" fill="currentColor" fill-opacity=".6"></circle>`;});
+  let field='';for(let n=0;n<100;n++){const a=r()*360,d=Math.sqrt(r())*(fi-6),[x,y]=pt(a,d);field+=`<circle cx="${f1(x)}" cy="${f1(y)}" r="${[.6,.8,1,1.2,1.6][n%5]}" fill="currentColor" fill-opacity="${(.15+r()*.55).toFixed(2)}"></circle>`;}
+  return {ring,field};}
 };
-const patCache={};const patHTML=k=>patCache[k]||(patCache[k]=PAT[k]());
+const patCache={};
+function patOf(k){const key=k+'|'+V.friezeR+'|'+V.friezeW;return patCache[key]||(patCache[key]=PAT[k](V.friezeR-V.friezeW,V.friezeR));}
 let patAk=null,patBk=null;
 function patterns(i,col){
  let p=0;for(let n=0;n<PERIODS.length;n++)if(i>=PERIODS[n][0])p=n;
  const cur=PERIODS[p][1],next=PERIODS[p+1];
  let t=0;if(next&&V.fadeMin>0){const left=next[0]-i;if(left<=V.fadeMin)t=1-left/(V.fadeMin+1);}
- if(patAk!==cur){$('patA').innerHTML=patHTML(cur);patAk=cur;}
- const nk=next?next[1]:null;if(patBk!==nk){$('patB').innerHTML=nk?patHTML(nk):'';patBk=nk;}
+ const ka=cur+'|'+V.friezeR+'|'+V.friezeW,nk=next?next[1]:null,kb=nk?nk+'|'+V.friezeR+'|'+V.friezeW:null;
+ if(patAk!==ka){const P=patOf(cur);$('patA').innerHTML=P.field+P.ring;$('glowA').innerHTML=P.ring;patAk=ka;}
+ if(patBk!==kb){const P=nk?patOf(nk):{field:'',ring:''};$('patB').innerHTML=P.field+P.ring;$('glowB').innerHTML=P.ring;patBk=kb;}
  $('patA').style.opacity=(1-t)*V.pattern;$('patB').style.opacity=t*V.pattern;
  $('patA').style.color=col;$('patB').style.color=col;
+ const gc=mixHex(col,'#ffffff',.55);
+ $('glowA').style.opacity=1-t;$('glowB').style.opacity=t;$('glowA').style.color=gc;$('glowB').style.color=gc;
+}
+
+/* ---------- the seconds glow: a soft light that travels once round the frieze every minute ---------- */
+let wedgeTail=null;
+function secondsGlow(){
+ const on=V.secGlow&&!V.aod&&V.bg;$('secGlow').style.display=on?'':'none';if(!on)return;
+ if(wedgeTail!==V.glowTail){ // the tail: thin wedges fading behind the head
+  const N=30,st=V.glowTail/N;let s='';
+  for(let k=0;k<N;k++){const a2=-k*st+.4,a1=-(k+1)*st,[x1,y1]=pt(a1,240),[x2,y2]=pt(a2,240);
+   s+=`<path d="M225 225L${f1(x1)} ${f1(y1)}A240 240 0 0 1 ${f1(x2)} ${f1(y2)}Z" fill="#fff" fill-opacity="${Math.pow(1-k/N,1.7).toFixed(3)}"></path>`;}
+  $('secWedge').innerHTML=s;wedgeTail=V.glowTail;}
+ const d=new Date(),a=(d.getSeconds()+d.getMilliseconds()/1000)*6;
+ $('secWedge').setAttribute('transform',`rotate(${a.toFixed(2)} 225 225)`);
+ $('secGlow').style.opacity=V.glowStr;
 }
 
 /* ---------- ring: era bands, labels, now tick, marker ---------- */
@@ -349,12 +413,13 @@ function draw(){
  yr.innerHTML=`<span id="ad" style="color:${cc('c_ad',ink)};opacity:${V.o_ad}">AD</span>${digits}`;
  $('yearBox').style.top=(V.yearY-V.yearSize/2)+'px';
  // status (future only)
- const st=$('status');st.textContent=ev.s?ev.s.toUpperCase():'';st.style.color=cc('c_status',soft);st.style.opacity=V.o_status;
+ const st=$('status');st.className=V.labelFont;st.textContent=ev.s||'';st.style.color=cc('c_status',soft);st.style.opacity=V.o_status;
  st.style.top=(V.eventY-V.statusGap)+'px';
  // event
  const e=$('event');e.textContent=(!V.placeholders&&ev.ph)?'':ev.t;
- e.style.top=V.eventY+'px';e.style.width=V.eventW+'px';e.style.fontSize=V.eventSize+'px';e.style.color=cc('c_event',soft);e.style.opacity=ev.ph?.62*V.o_event:V.o_event;
- e.classList.toggle('it',y>2026);e.classList.toggle('ph',ev.ph);
+ const ew=eventWidth();
+ e.style.top=V.eventY+'px';e.style.width=ew+'px';e.style.fontSize=V.eventSize+'px';e.style.color=cc('c_event',soft);e.style.opacity=ev.ph?.62*V.o_event:V.o_event;
+ e.classList.toggle('ph',ev.ph);
  e.style.maxHeight='none';const over=e.scrollHeight>V.eventSize*1.3*2+2;e.classList.toggle('over',over);
  e.style.maxHeight=(V.eventSize*1.3*2+2)+'px';
  // complications or sponsor
@@ -366,8 +431,9 @@ function draw(){
   const ct=cc('c_compText',ink),cbox=`color:${ct};border-color:${rgba(V.c_compBorder||ink,V.o_compBorder)};background:${rgba(V.c_compFill||'#000000',V.o_compFill)}`;
   const bl=batt?Math.round(batt.level*100)+'%':'—';
   if(V.comps==='arc'){
+   const cr=compRadius();
    const pos=[[180+V.compGap/2,`<small>${dn}</small><b>${dd}</b>`],[180-V.compGap/2,`${battIcon(ct)}<b style="font-size:12px;margin-top:1px">${bl}</b>`]];
-   pos.forEach(([a,html])=>{const [x,yy]=pt(a,V.compR);const c=document.createElement('div');c.className='comp';
+   pos.forEach(([a,html])=>{const [x,yy]=pt(a,cr);const c=document.createElement('div');c.className='comp';
     c.style.cssText+=`left:${x-V.compD/2}px;top:${yy-V.compD/2}px;width:${V.compD}px;height:${V.compD}px;border-radius:50%;${cbox}`;c.innerHTML=html;cw.appendChild(c);});
   }else{
    const top=C+V.compR-17;
@@ -381,6 +447,13 @@ function draw(){
  $('minute').value=i;$('minLbl').textContent=`${String(h).padStart(2,'0')}:${mm}`;
  $('revYear').textContent=`AD ${y} (${String(h).padStart(2,'0')}:${mm}): ${ev.t}`;
 }
+
+/* ---------- the frieze rule: text and complications stay inside the frieze ---------- */
+function innerLimit(){return V.friezeR-V.friezeW-V.textGap;}
+function eventWidth(){ // the widest box whose two lines stay inside the frieze
+ const lh=V.eventSize*1.3,dy=Math.max(Math.abs(V.eventY-C),Math.abs(V.eventY+2*lh-C)),r=innerLimit();
+ return Math.max(120,Math.min(V.eventW,2*Math.sqrt(Math.max(0,r*r-dy*dy))));}
+function compRadius(){return Math.min(V.compR,innerLimit()-V.compD/2);}
 
 /* ---------- sizing ---------- */
 function size(){
@@ -399,7 +472,9 @@ const LOOK=[
  ['glow1','Glow, upper right','range',0,1,.05],['glow2','Glow, lower left','range',0,1,.05],
  ['pattern','Pattern strength','range',0,1.5,.05],['grain','Grain / leather','range',0,.4,.01],['grainScale','Grain size (small = coarse)','range',.1,1.5,.05],
  ['fadeMin','Pattern change fade (minutes)','range',0,30,1],
- ['h','Year'],['yearFont','Year typeface','sel',['Cormorant Garamond','Cinzel','EB Garamond','Inter']],['tick','Blinker','sel',['dot','muted','none']],
+ ['h','Seconds'],['secGlow','Seconds glow round the frieze','bool'],['glowStr','Glow strength','range',0,1.5,.05],['glowTail','Glow tail (degrees)','range',20,240,5],
+ ['h','Year'],['yearFont','Year typeface','sel',['Cormorant Garamond','Cinzel','EB Garamond','Inter']],
+ ['labelFont','Scheduled / Perhaps / Sci-fi label','sel',['serif','sans']],['tick','Blinker','sel',['dot','muted','none']],
  ['h','Show'],['eraLabels','Era names on the bezel','bool'],['placeholders','Placeholder texts','bool'],['overflow','Mark texts over two lines','bool']
 ];
 const COLS=[
@@ -413,7 +488,8 @@ const COLS=[
 const LAYOUT=[
  ['h','Face size'],['trueSize','True watch size','bool'],['mm','Watch screen diameter (mm)','range',30,46,.5],['pxmm','Phone pixels per mm','range',4,7,.05],['fit','Fit-to-screen size','range',.6,1,.01],
  ['h','Year'],['yearSize','Year size','range',70,150,1],['yearY','Year position','range',90,220,1],
- ['h','Event text'],['eventY','Event position','range',180,300,1],['eventSize','Event text size','range',14,26,.5],['eventW','Event text width','range',240,380,2],['statusGap','Future label above text','range',12,40,1],
+ ['h','Frieze'],['friezeR','Frieze outer edge (radius)','range',150,196,1],['friezeW','Frieze width','range',6,28,1],['textGap','Clearance inside the frieze','range',0,20,1],
+ ['h','Event text'],['eventY','Event position','range',180,300,1],['eventSize','Event text size','range',14,26,.5],['eventW','Event text width (the frieze caps it)','range',240,380,2],['statusGap','Future label above text','range',12,40,1],
  ['h','Complications'],['comps','Style','sel',['arc','pills']],['compR','Distance from centre','range',100,180,1],['compD','Circle size','range',48,90,1],['compGap','Spread (degrees)','range',40,180,2]
 ];
 function build(list,host){
@@ -485,6 +561,19 @@ $('flag').onclick=()=>{const y=yearOf(curIdx());flags[y]={note:$('note').value.t
 $('flagCopy').onclick=()=>{const t=Object.keys(flags).map(Number).sort((a,b)=>a-b).map(y=>`${y}\t${flags[y].text}\t${flags[y].note||''}`).join('\n');
  const o=$('flagOut');o.style.display='block';o.value=t;try{navigator.clipboard.writeText(t);$('flagCopy').textContent='Copied';setTimeout(()=>$('flagCopy').textContent='Copy list',1500);}catch(e){}};
 listFlags();
+$('flagSave').onclick=()=>{
+ const blob=new Blob([JSON.stringify({app:'History Clock simulator',saved:new Date().toISOString(),flags},null,1)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`history-clock-notes-${new Date().toISOString().slice(0,10)}.json`;
+ document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);};
+$('flagLoad').onclick=()=>$('flagFile').click();
+$('flagFile').onchange=async()=>{const f=$('flagFile').files[0];if(!f)return;
+ try{const d=JSON.parse(await f.text()),inc=d.flags||d;let added=0,merged=0;
+  for(const y in inc){const n=inc[y];if(!n||isNaN(+y))continue;
+   if(!flags[y]){flags[y]=n;added++;}
+   else if((n.note||'')&&n.note!==flags[y].note&&!(flags[y].note||'').includes(n.note)){flags[y].note=[flags[y].note,n.note].filter(Boolean).join(' / ');merged++;}}
+  saveFlags();listFlags();draw();$('flagMsg').textContent=`Loaded: ${added} new, ${merged} merged with notes already here.`;}
+ catch(e){$('flagMsg').textContent='That file could not be read as History Clock notes.';}
+ $('flagFile').value='';};
 
 /* ---------- tick ---------- */
 let acc=0,lastT=performance.now(),lastDrawn=-1;
@@ -492,6 +581,7 @@ function loop(t){
  const dt=(t-lastT)/1000;lastT=t;
  if(ff&&!live){acc+=dt*ff;if(acc>=1){const n=Math.floor(acc);acc-=n;manualIdx=(manualIdx+n)%1440;}}
  const i=curIdx();if(i!==lastDrawn){lastDrawn=i;draw();if(!ff)saveTime();}
+ secondsGlow();
  requestAnimationFrame(loop);
 }
 apply();requestAnimationFrame(loop);
