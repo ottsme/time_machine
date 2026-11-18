@@ -22,15 +22,21 @@ body.sheet #stage{padding-bottom:58vh;align-items:flex-end}
 .lay{position:absolute;left:0;top:0;width:450px;height:450px}
 #yearBox{position:absolute;left:0;width:450px;display:flex;justify-content:center;pointer-events:none}
 #year{position:relative;line-height:1;font-weight:600;font-variant-numeric:lining-nums tabular-nums;letter-spacing:.01em;display:flex;align-items:baseline;white-space:nowrap}
-#ad{position:absolute;right:100%;bottom:.1em;margin-right:.09em;font-family:Inter,sans-serif;font-weight:500;font-size:.15em;letter-spacing:.12em}
+#ad{font-family:Inter,sans-serif;font-weight:500;font-size:.15em;letter-spacing:.12em;white-space:nowrap;line-height:1}
+#ad.low{position:absolute;right:100%;bottom:.1em;margin-right:.09em}
+.adw{width:0;display:flex;justify-content:flex-end;align-items:baseline;overflow:visible}
+.adw #ad{margin-right:.6em}
 .tk{display:inline-block;position:relative;width:0;height:0}
 .tk i{position:absolute;bottom:.6em;width:.055em;height:.055em;border-radius:50%;margin-left:-.0275em;animation:blink 2s steps(1) infinite}
 @keyframes blink{0%,49%{visibility:visible}50%,100%{visibility:hidden}}
-#status{position:absolute;left:0;width:450px;text-align:center;font-style:italic;text-transform:uppercase}
+#status{position:absolute;left:225px;transform:translateX(-50%);white-space:nowrap;text-align:center;font-style:italic;text-transform:uppercase}
 #status.serif{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;letter-spacing:2px}
 #status.sans{font-family:Inter,sans-serif;font-size:11px;font-weight:500;letter-spacing:2.2px}
-#event{position:absolute;left:50%;transform:translateX(-50%);text-align:center;font-weight:500;line-height:1.3;overflow:hidden}
-body.ovl #event.over{outline:2px dashed #ff5a4a;outline-offset:4px}
+#event{position:absolute;left:0;top:0;width:450px;font-weight:500;line-height:1.3}
+#event div{position:absolute;text-align:center;white-space:nowrap}
+body.ovl #event.over div{outline:2px dashed #ff5a4a;outline-offset:3px}
+#guides{position:absolute;left:0;top:0;pointer-events:none;display:none}
+body.guides #guides{display:block}
 .comp{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.16);font-weight:600;line-height:1.05}
 .comp small{font-size:9px;letter-spacing:1.5px;opacity:.75;font-weight:600}
 .comp b{font-size:16px;font-weight:600}
@@ -107,6 +113,7 @@ body.sheet #sheet{transform:none}
     <div id="comps"></div>
     <div id="sponsor"><small>BROUGHT TO YOU BY</small><b>The Original Time Machine</b></div>
    </div>
+   <svg width="450" height="450" viewBox="0 0 450 450" aria-hidden="true" id="guides"></svg>
   </div>
   <div id="flagMark" title="Flagged"></div>
  </div>
@@ -143,7 +150,7 @@ body.sheet #sheet{transform:none}
  <div class="pane" id="p-layout"><div id="layoutCtl"></div>
   <div class="row"><button class="btn" id="reset">Reset all</button><button class="btn" id="copy">Copy values</button></div>
   <textarea id="out" readonly aria-label="Current values"></textarea>
-  <p class="hint">History Clock simulator v1.4. Values are kept on this phone.</p>
+  <p class="hint">History Clock simulator v1.5. Values are kept on this phone.</p>
  </div>
  <div class="pane" id="p-review">
   <h3>This year</h3>
@@ -170,20 +177,22 @@ const NS='http://www.w3.org/2000/svg';
 /* ---------- tunable values ---------- */
 const DEF={
  accent:'#c9372c', aod:false, bg:true, glow1:0.6, glow2:0.4, grain:0.10, grainScale:0.8, pattern:0.7, fadeMin:10,
- yearFont:'Cormorant Garamond', labelFont:'serif', tick:'dot', secGlow:true, glowStr:0.7, glowTail:100, eraLabels:true, overflow:true, placeholders:true,
+ yearFont:'Cormorant Garamond', labelFont:'serif', tick:'none', adPos:'baseline', guides:false, secGlow:true, glowStr:0.7, glowTail:100, eraLabels:true, overflow:true, placeholders:true,
  trueSize:false, mm:37, pxmm:5.4, fit:0.92,
- yearSize:112, yearY:150, eventY:232, eventSize:20, eventW:322, statusGap:22,
+ yearSize:112, yearY:146, eventY:226, eventSize:20, eventW:340, maxLines:3, statusGap:20,
  friezeR:186, friezeW:14, textGap:6,
- comps:'arc', compR:136, compD:66, compGap:60,
+ comps:'pill', pillW:100, pillH:34, pillLift:2, compR:136, compD:66, compGap:60,
  // colours: '' = automatic (follows the era colour drift), otherwise a fixed colour
  c_year:'', c_ad:'', c_event:'', c_status:'', c_bandOn:'', c_bandOff:'#ffffff', c_labOn:'', c_labOff:'#ffffff', c_now:'#ffffff', c_marker:'#f4ead8',
  c_compText:'', c_compBorder:'#ffffff', c_compFill:'#000000',
  o_ad:.45, o_event:1, o_status:.8, o_bandOff:.22, o_labOff:.38, o_now:.75, o_compBorder:.16, o_compFill:.32
 };
 let V={...DEF};
-try{const s=JSON.parse(localStorage.getItem('hc-sim')||'{}');for(const k in s)if(k in DEF)V[k]=s[k];}catch(e){}
+try{const s=JSON.parse(localStorage.getItem('hc-sim')||'{}');for(const k in s)if(k in DEF)V[k]=s[k];
+ // v1.5 changed some defaults: settings saved by older versions take the new ones
+ if(s._v&&s._v<'1.5')Object.assign(V,{tick:'none',comps:'pill',yearY:DEF.yearY,eventY:DEF.eventY,eventW:DEF.eventW,statusGap:DEF.statusGap});}catch(e){}
 const rgba=(h,o)=>{const [r,g,b]=hex(h);return `rgba(${r},${g},${b},${o})`;};
-function save(){try{localStorage.setItem('hc-sim',JSON.stringify({...V,_v:'1.1'}));}catch(e){}}
+function save(){try{localStorage.setItem('hc-sim',JSON.stringify({...V,_v:'1.5'}));}catch(e){}}
 
 /* ---------- time ---------- */
 let live=true, manualIdx=0, ff=0;
@@ -333,7 +342,9 @@ const PAT={
   return {ring,field};}
 };
 const patCache={};
-function patOf(k){const key=k+'|'+V.friezeR+'|'+V.friezeW;return patCache[key]||(patCache[key]=PAT[k](V.friezeR-V.friezeW,V.friezeR));}
+function patOf(k){const key=k+'|'+V.friezeR+'|'+V.friezeW;
+ if(!patCache[key]){const P=PAT[k](V.friezeR-V.friezeW,V.friezeR);if(k!=='orbits')P.field='';patCache[key]=P;} // the frieze is enough; only the future keeps its starfield
+ return patCache[key];}
 let patAk=null,patBk=null;
 function patterns(i,col){
  let p=0;for(let n=0;n<PERIODS.length;n++)if(i>=PERIODS[n][0])p=n;
@@ -410,38 +421,37 @@ function draw(){
  let digits;
  if(h===0)digits=`${tick}<span>${m}</span>`;
  else digits=`<span>${h}</span>${tick}<span style="${V.tick==='muted'?'opacity:.62':''}">${mm}</span>`;
- yr.innerHTML=`<span id="ad" style="color:${cc('c_ad',ink)};opacity:${V.o_ad}">AD</span>${digits}`;
+ const adSpan=`<span id="ad"${V.adPos==='low'?' class="low"':''} style="color:${cc('c_ad',ink)};opacity:${V.o_ad}">AD</span>`;
+ yr.innerHTML=(V.adPos==='low'?adSpan:`<span class="adw">${adSpan}</span>`)+digits;
  $('yearBox').style.top=(V.yearY-V.yearSize/2)+'px';
- // status (future only)
+ // event text: up to three lines, each as wide as the frieze allows at its height, balanced, block centred vertically
+ const e=$('event'),txt=(!V.placeholders&&ev.ph)?'':ev.t,L=layoutText(txt);
+ e.innerHTML='';e.style.fontSize=V.eventSize+'px';e.style.color=cc('c_event',soft);e.style.opacity=ev.ph?.62*V.o_event:V.o_event;
+ L.lines.forEach((ln,k)=>{const d=document.createElement('div');d.textContent=ln.t;d.style.cssText=`left:${C-ln.w/2}px;top:${ln.y}px;width:${ln.w}px`;e.appendChild(d);});
+ e.classList.toggle('ph',ev.ph);e.classList.toggle('over',L.over);
+ // status (future only), just above the first line
  const st=$('status');st.className=V.labelFont;st.textContent=ev.s||'';st.style.color=cc('c_status',soft);st.style.opacity=V.o_status;
- st.style.top=(V.eventY-V.statusGap)+'px';
- // event
- const e=$('event');e.textContent=(!V.placeholders&&ev.ph)?'':ev.t;
- const ew=eventWidth();
- e.style.top=V.eventY+'px';e.style.width=ew+'px';e.style.fontSize=V.eventSize+'px';e.style.color=cc('c_event',soft);e.style.opacity=ev.ph?.62*V.o_event:V.o_event;
- e.classList.toggle('ph',ev.ph);
- e.style.maxHeight='none';const over=e.scrollHeight>V.eventSize*1.3*2+2;e.classList.toggle('over',over);
- e.style.maxHeight=(V.eventSize*1.3*2+2)+'px';
+ st.style.top=(L.top-V.statusGap)+'px';
  // complications or sponsor
  const sp=$('sponsor'),special=i===0;
- sp.style.display=special?'':'none';sp.style.color=soft;sp.style.top=(C+V.compR-20)+'px';
+ const pb=pillBox();
+ sp.style.display=special?'':'none';sp.style.color=soft;sp.style.top=(pb.y+pb.h-38)+'px';
  const cw=$('comps');cw.innerHTML='';
  if(!aod&&!special){
   const d=new Date(),dn=d.toLocaleDateString('en-GB',{weekday:'short'}).toUpperCase(),dd=d.getDate();
   const ct=cc('c_compText',ink),cbox=`color:${ct};border-color:${rgba(V.c_compBorder||ink,V.o_compBorder)};background:${rgba(V.c_compFill||'#000000',V.o_compFill)}`;
-  const bl=batt?Math.round(batt.level*100)+'%':'—';
   if(V.comps==='arc'){
-   const cr=compRadius();
+   const bl=batt?Math.round(batt.level*100)+'%':'—',cr=compRadius();
    const pos=[[180+V.compGap/2,`<small>${dn}</small><b>${dd}</b>`],[180-V.compGap/2,`${battIcon(ct)}<b style="font-size:12px;margin-top:1px">${bl}</b>`]];
    pos.forEach(([a,html])=>{const [x,yy]=pt(a,cr);const c=document.createElement('div');c.className='comp';
     c.style.cssText+=`left:${x-V.compD/2}px;top:${yy-V.compD/2}px;width:${V.compD}px;height:${V.compD}px;border-radius:50%;${cbox}`;c.innerHTML=html;cw.appendChild(c);});
-  }else{
-   const top=C+V.compR-17;
-   [[-55,`<small>${dn} ${dd}</small>`],[55,`${battIcon(ct)}<b>${bl}</b>`]].forEach(([dx,html])=>{const c=document.createElement('div');c.className='comp pill';
-    c.style.cssText+=`left:${C+dx-48}px;top:${top}px;${cbox}`;c.innerHTML=html;cw.appendChild(c);});
+  }else{ // one pill at 6 o'clock: day and date
+   const c=document.createElement('div');c.className='comp pill';
+   c.style.cssText+=`left:${pb.x}px;top:${pb.y}px;width:${pb.w}px;height:${pb.h}px;border-radius:${pb.h/2}px;${cbox}`;c.innerHTML=`<small>${dn}</small><b>${dd}</b>`;cw.appendChild(c);
   }
  }
  $('flagMark').classList.toggle('on',!!flags[y]);
+ guides(L,pb);
  // info texts
  $('clockInfo').textContent=`${String(h).padStart(2,'0')}:${mm}  =  AD ${y}  ·  ${eraOf(i)}${ev.ph?'  ·  placeholder':''}`;
  $('minute').value=i;$('minLbl').textContent=`${String(h).padStart(2,'0')}:${mm}`;
@@ -450,10 +460,60 @@ function draw(){
 
 /* ---------- the frieze rule: text and complications stay inside the frieze ---------- */
 function innerLimit(){return V.friezeR-V.friezeW-V.textGap;}
-function eventWidth(){ // the widest box whose two lines stay inside the frieze
- const lh=V.eventSize*1.3,dy=Math.max(Math.abs(V.eventY-C),Math.abs(V.eventY+2*lh-C)),r=innerLimit();
- return Math.max(120,Math.min(V.eventW,2*Math.sqrt(Math.max(0,r*r-dy*dy))));}
+function chordAt(y0,y1){ // widest centred line between heights y0 and y1 that stays inside the clearance circle
+ const r=innerLimit(),dy=Math.max(Math.abs(y0-C),Math.abs(y1-C)); // the slot's far edge is the one that touches
+ return Math.max(0,Math.min(V.eventW,2*Math.sqrt(Math.max(0,r*r-dy*dy))));}
 function compRadius(){return Math.min(V.compR,innerLimit()-V.compD/2);}
+function pillBox(){ // the pill's lower corners touch the clearance circle
+ const r=innerLimit(),w=V.pillW,h=V.pillH,rc=h/2,cx=w/2-rc; // corner circles
+ const bottom=C+Math.sqrt(Math.max(0,(r-rc)*(r-rc)-cx*cx))+rc-V.pillLift;
+ return {x:C-w/2,y:bottom-h,w,h};}
+const measureCtx=document.createElement('canvas').getContext('2d');
+function textW(t){measureCtx.font=`500 ${V.eventSize}px Inter, sans-serif`;return measureCtx.measureText(t).width;}
+function layoutText(t){
+ const lh=V.eventSize*1.3,maxL=V.maxLines,blockTop=V.eventY;
+ const words=t?t.split(/ +/).filter(Boolean):[];
+ const linesFor=k=>{const off=(maxL-k)*lh/2,a=[];for(let j=0;j<k;j++){const y=blockTop+off+j*lh;a.push({y,w:chordAt(y,y+lh)});}return a;};
+ const sp=textW(' ');const ww=words.map(textW);
+ const width=(i,j)=>{let s=0;for(let n=i;n<j;n++)s+=ww[n];return s+sp*Math.max(0,j-i-1);};
+ if(!words.length)return {lines:[],over:false,top:blockTop+(maxL-1)*lh/2,lh};
+ for(let k=1;k<=maxL;k++){
+  const slots=linesFor(k);let best=null;
+  const tryCut=(start,j,cuts)=>{ // all ways to cut the words into k lines that fit; keep the most even
+   if(j===k-1){const w=width(start,words.length);if(w>slots[j].w)return;
+    const all=[...cuts,words.length];let prev=0,r=[];for(const c of all){r.push(width(prev,c)/slots[r.length].w);prev=c;}
+    const m=r.reduce((x,y)=>x+y,0)/r.length,cost=r.reduce((x,y)=>x+(y-m)*(y-m),0);if(!best||cost<best.cost)best={cost,cuts:all};return;}
+   for(let c=start+1;c<=words.length-(k-1-j);c++){if(width(start,c)>slots[j].w)break;tryCut(c,j+1,[...cuts,c]);}};
+  tryCut(0,0,[]);
+  if(best){let prev=0;const lines=best.cuts.map((c,j)=>{const ln={t:words.slice(prev,c).join(' '),y:slots[j].y,w:slots[j].w};prev=c;return ln;});return {lines,over:false,top:lines[0].y,lh};}
+ }
+ // does not fit: fill the lines greedily and mark it
+ const slots=linesFor(maxL),lines=slots.map(s=>({t:'',y:s.y,w:s.w}));let j=0;
+ words.forEach(w=>{const cand=lines[j].t?lines[j].t+' '+w:w;if(textW(cand)>lines[j].w&&lines[j].t&&j<maxL-1)j++;lines[j].t=lines[j].t?lines[j].t+' '+w:w;});
+ return {lines,over:true,top:lines[0].y,lh};
+}
+
+/* ---------- outlines (simulator only) ---------- */
+function guides(L,pb){
+ if(!V.guides){$('guides').innerHTML='';return;}
+ const f=document.querySelector('#face').getBoundingClientRect(),sc=f.width/450;
+ const box=(el,col,lab)=>{if(!el||!el.textContent)return '';const b=el.getBoundingClientRect();if(!b.width)return '';
+  const x=(b.left-f.left)/sc,y=(b.top-f.top)/sc,w=b.width/sc,h=b.height/sc;
+  return `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="none" stroke="${col}" stroke-width="1"></rect><text x="${f1(x+2)}" y="${f1(y-2)}" fill="${col}" font-size="8" font-family="Inter,sans-serif">${lab}</text>`;};
+ let s='';
+ s+=circ(V.friezeR,'stroke="#38d7ff" stroke-width="1"').replace('stroke="currentColor" ','')+circ(V.friezeR-V.friezeW,'stroke="#38d7ff" stroke-width="1"').replace('stroke="currentColor" ','');
+ s+=circ(innerLimit(),'stroke="#ffd23a" stroke-width="1" stroke-dasharray="4 3"').replace('stroke="currentColor" ','');
+ s+=`<text x="225" y="${f1(C-V.friezeR+9)}" fill="#38d7ff" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">frieze</text><text x="225" y="${f1(C-innerLimit()+9)}" fill="#ffd23a" font-size="8" text-anchor="middle" font-family="Inter,sans-serif">clearance</text>`;
+ s+=box($('year'),'#ff5ad2','year');s+=box($('ad'),'#ff9de6','AD');s+=box($('status'),'#b48cff','label');
+ // the text block: every possible line slot, and the lines in use
+ const lh=V.eventSize*1.3;for(let j=0;j<V.maxLines;j++){const y=V.eventY+j*lh,w=chordAt(y,y+lh);s+=`<rect x="${f1(C-w/2)}" y="${f1(y)}" width="${f1(w)}" height="${f1(lh)}" fill="none" stroke="#5aff8c" stroke-opacity=".45" stroke-dasharray="3 3"></rect>`;}
+ L.lines.forEach((ln,j)=>{const tw=textW(ln.t);s+=`<rect x="${f1(C-tw/2)}" y="${f1(ln.y)}" width="${f1(tw)}" height="${f1(lh)}" fill="none" stroke="#5aff8c" stroke-width="1"></rect>`;});
+ s+=`<text x="${f1(C-chordAt(V.eventY,V.eventY+lh)/2+2)}" y="${f1(V.eventY-2)}" fill="#5aff8c" font-size="8" font-family="Inter,sans-serif">text (${V.maxLines} lines max)</text>`;
+ if(!$('comps').children.length){}
+ else if(V.comps==='pill')s+=`<rect x="${f1(pb.x)}" y="${f1(pb.y)}" width="${f1(pb.w)}" height="${f1(pb.h)}" rx="${pb.h/2}" fill="none" stroke="#ffa04a" stroke-width="1"></rect><text x="${f1(pb.x+pb.w+4)}" y="${f1(pb.y+pb.h/2+3)}" fill="#ffa04a" font-size="8" font-family="Inter,sans-serif">complication</text>`;
+ else document.querySelectorAll('#comps .comp').forEach(c=>{s+=box(c,'#ffa04a','');});
+ $('guides').innerHTML=s;
+}
 
 /* ---------- sizing ---------- */
 function size(){
@@ -474,7 +534,7 @@ const LOOK=[
  ['fadeMin','Pattern change fade (minutes)','range',0,30,1],
  ['h','Seconds'],['secGlow','Seconds glow round the frieze','bool'],['glowStr','Glow strength','range',0,1.5,.05],['glowTail','Glow tail (degrees)','range',20,240,5],
  ['h','Year'],['yearFont','Year typeface','sel',['Cormorant Garamond','Cinzel','EB Garamond','Inter']],
- ['labelFont','Scheduled / Perhaps / Sci-fi label','sel',['serif','sans']],['tick','Blinker','sel',['dot','muted','none']],
+ ['labelFont','Scheduled / Perhaps / Sci-fi label','sel',['serif','sans']],['tick','Blinker','sel',['none','dot','muted']],['adPos','AD','sel',['baseline','low']],
  ['h','Show'],['eraLabels','Era names on the bezel','bool'],['placeholders','Placeholder texts','bool'],['overflow','Mark texts over two lines','bool']
 ];
 const COLS=[
@@ -488,9 +548,11 @@ const COLS=[
 const LAYOUT=[
  ['h','Face size'],['trueSize','True watch size','bool'],['mm','Watch screen diameter (mm)','range',30,46,.5],['pxmm','Phone pixels per mm','range',4,7,.05],['fit','Fit-to-screen size','range',.6,1,.01],
  ['h','Year'],['yearSize','Year size','range',70,150,1],['yearY','Year position','range',90,220,1],
+ ['h','Outlines'],['guides','Show outlines of all elements','bool'],
  ['h','Frieze'],['friezeR','Frieze outer edge (radius)','range',150,196,1],['friezeW','Frieze width','range',6,28,1],['textGap','Clearance inside the frieze','range',0,20,1],
- ['h','Event text'],['eventY','Event position','range',180,300,1],['eventSize','Event text size','range',14,26,.5],['eventW','Event text width (the frieze caps it)','range',240,380,2],['statusGap','Future label above text','range',12,40,1],
- ['h','Complications'],['comps','Style','sel',['arc','pills']],['compR','Distance from centre','range',100,180,1],['compD','Circle size','range',48,90,1],['compGap','Spread (degrees)','range',40,180,2]
+ ['h','Event text'],['eventY','Text block position (top of line 1)','range',180,300,1],['eventSize','Event text size','range',14,26,.5],['maxLines','Lines at most','range',1,3,1],['eventW','Line width limit (the frieze caps it too)','range',240,400,2],['statusGap','Future label above text','range',12,40,1],
+ ['h','Complications'],['comps','Style','sel',['pill','arc']],['pillW','Pill width','range',70,160,1],['pillH','Pill height','range',24,50,1],['pillLift','Pill lift from the clearance line','range',0,40,1],
+ ['h','Two circles (arc style)'],['compR','Distance from centre','range',100,180,1],['compD','Circle size','range',48,90,1],['compGap','Spread (degrees)','range',40,180,2]
 ];
 function build(list,host){
  host.innerHTML='';
@@ -510,7 +572,7 @@ function build(list,host){
   if(type==='sel'){const s=document.createElement('select');a.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;s.appendChild(op);});s.value=V[k];s.onchange=()=>{V[k]=s.value;apply();};host.appendChild(s);}
  }
 }
-function apply(){document.body.classList.toggle('ovl',V.overflow);save();size();draw();}
+function apply(){document.body.classList.toggle('ovl',V.overflow);document.body.classList.toggle('guides',V.guides);save();size();draw();}
 function buildAll(){build(LOOK,$('lookCtl'));build(COLS,$('colCtl'));build(LAYOUT,$('layoutCtl'));}
 buildAll();
 $('reset').onclick=()=>{V={...DEF};try{localStorage.removeItem('hc-sim');}catch(e){}buildAll();apply();};
