@@ -11,6 +11,6 @@ A working mockup of the new timetravelco.com home page, for tuning the look and 
 - "Restart roll" starts the headline from the top, to judge the timing.
 - People who turn motion off in their system settings see a still headline ("road", "13.8 billion"); screen readers get the whole sentence with all three numbers.
 
-**Stand-ins:** the rings in the hero stand in for the app's real spacetime tunnel; all pictures are labelled placeholders until deck images are chosen. The founder story is a draft for Ott to rewrite.
+**Stand-ins:** the story pictures are old reference frames from the menu prototype; the rings in the hero stand in for the app's real spacetime tunnel; other pictures are labelled placeholders until deck images are chosen. The founder story is a draft for Ott to rewrite.
 
 Parked ideas (not built): "Every road is 13.8 billion years long" (one story only), "Turn any road into a time machine", a rotating hero with a picture per story, cartoon placards (rejected).
