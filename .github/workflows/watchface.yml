@@ -32,7 +32,7 @@ jobs:
       - name: Validate against Watch Face Format 4
         run: |
           curl -sSL -o /tmp/wff-validator.jar https://github.com/google/watchface/releases/latest/download/wff-validator.jar
-          java -jar /tmp/wff-validator.jar 4 clock/watchface/watchface/src/main/res/raw/watchface.xml | tee /tmp/validation.txt
+          java -jar /tmp/wff-validator.jar 4 clock/watchface/watchface/src/main/res/raw/watchface.xml 2>&1 | tee /tmp/validation.txt
           grep -q "PASSED" /tmp/validation.txt
 
       - uses: gradle/actions/setup-gradle@v4
