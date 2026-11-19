@@ -17,15 +17,28 @@ android {
         versionName = "0.3.0"
     }
 
+    // A fixed development key, so every cloud build can update the face already on the watch
+    // (otherwise each build gets a new random debug key and the watch refuses the update).
+    // Development only: a Play release will be signed with a separate, private key.
+    signingConfigs {
+        create("dev") {
+            storeFile = file("../keystore/dev.jks")
+            storePassword = "historyclock"
+            keyAlias = "dev"
+            keyPassword = "historyclock"
+        }
+    }
+
     buildTypes {
         debug {
+            signingConfig = signingConfigs.getByName("dev")
             isMinifyEnabled = true
         }
         release {
             isMinifyEnabled = true
             // Keep resources: the watch face is nothing but resources.
             isShrinkResources = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("dev")
         }
     }
 }

@@ -51,7 +51,15 @@ switch ($Action) {
         Write-Host "Downloading the latest watch face build..."
         Invoke-WebRequest -Uri $apkUrl -OutFile $apk -UseBasicParsing
         Write-Host "Installing on $dev ..."
-        & $adb -s $dev install -r $apk | Out-Host
+        $out = (& $adb -s $dev install -r $apk 2>&1 | Out-String)
+        Write-Host $out
+        if ($out -match "UPDATE_INCOMPATIBLE|signatures do not match") {
+            # an older build signed with a different key: remove it once, then install fresh
+            Write-Host "Replacing the older build (different signing key)..."
+            & $adb -s $dev uninstall com.timetravelco.historyclock.watchface | Out-Host
+            & $adb -s $dev install $apk | Out-Host
+            Write-Host "Now select History Clock again on the watch (long-press the face)."
+        }
     }
     "shot" {
         $dev = Get-Watch
