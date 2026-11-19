@@ -1,0 +1,63 @@
+# Builds the History Clock watch face (Watch Face Format) in the cloud on every change,
+# validates it against Google's WFF schema, and publishes the APK as the "watchface-latest" release,
+# so it can be downloaded without logging in and installed on the watch with adb.
+name: History Clock watch face
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'clock/watchface/**'
+      - 'clock/tools/make_watchface.py'
+      - '.github/workflows/watchface.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate watchface.xml from the design values
+        run: python3 clock/tools/make_watchface.py
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Validate against Watch Face Format 4
+        run: |
+          curl -sSL -o /tmp/wff-validator.jar https://github.com/google/watchface/releases/latest/download/wff-validator.jar
+          java -jar /tmp/wff-validator.jar 4 clock/watchface/watchface/src/main/res/raw/watchface.xml | tee /tmp/validation.txt
+          grep -q "PASSED" /tmp/validation.txt
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the APK
+        working-directory: clock/watchface
+        run: ./gradlew --no-daemon :watchface:assembleDebug
+
+      - name: Name the APK
+        run: |
+          mkdir -p out
+          cp clock/watchface/watchface/build/outputs/apk/debug/watchface-debug.apk out/history-clock-watchface.apk
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: history-clock-watchface
+          path: out/history-clock-watchface.apk
+
+      - name: Publish as the "watchface-latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view watchface-latest >/dev/null 2>&1 || \
+            gh release create watchface-latest --title "History Clock watch face (latest build)" \
+              --notes "Built automatically from main. Install: adb install -r history-clock-watchface.apk" --prerelease
+          gh release upload watchface-latest out/history-clock-watchface.apk --clobber
+          gh release edit watchface-latest --notes "Built automatically from main at ${GITHUB_SHA::7}. Install: adb install -r history-clock-watchface.apk"
