@@ -5,7 +5,7 @@
 #   hc.ps1 pair        pair the PC with the watch (needed once; asks for the numbers)
 param([string]$Action = "install")
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"   # adb writes progress to stderr; do not treat it as fatal
 $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 $apkUrl = "https://github.com/ottsme/time_machine/releases/download/watchface-latest/history-clock-watchface.apk"
 $downloads = Join-Path $env:USERPROFILE "Downloads"
