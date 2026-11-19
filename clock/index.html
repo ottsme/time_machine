@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
 <title>History Clock — simulator</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -11,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Cinzel:wght@500;600&family=EB+Garamond:wght@500;600&family=Inter:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
+:root{color-scheme:dark} /* tells Samsung Internet's dark mode the page is already dark, so it leaves our colours alone */
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#000;color:#e9eef3;font:14px/1.4 Inter,system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
 #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;transition:padding-bottom .25s}
@@ -150,7 +152,7 @@ body.sheet #sheet{transform:none}
  <div class="pane" id="p-layout"><div id="layoutCtl"></div>
   <div class="row"><button class="btn" id="reset">Reset all</button><button class="btn" id="copy">Copy values</button></div>
   <textarea id="out" readonly aria-label="Current values"></textarea>
-  <p class="hint">History Clock simulator v1.6. Values are kept on this phone.</p>
+  <p class="hint">History Clock simulator v1.7. Values are kept on this phone.</p>
  </div>
  <div class="pane" id="p-review">
   <h3>This year</h3>
@@ -183,17 +185,18 @@ const DEF={
  friezeR:186, friezeW:14, textGap:6,
  comps:'pill', pillW:100, pillH:34, pillLift:2, compR:136, compD:66, compGap:60,
  // colours: '' = automatic (follows the era colour drift), otherwise a fixed colour
- c_year:'', c_ad:'', c_event:'', c_status:'', c_bandOn:'', c_bandOff:'#ffffff', c_labOn:'', c_labOff:'#ffffff', c_now:'#ffffff', c_marker:'#f4ead8', markerFill:'#9e0303',
+ c_year:'', c_ad:'', c_event:'', c_status:'', c_bandOn:'', c_bandOff:'#ffffff', c_labOn:'', c_labOff:'#ffffff', c_now:'#ffffff', c_marker:'#f4ead8', markerFill:'#9b111e',
  c_compText:'', c_compBorder:'#ffffff', c_compFill:'#000000',
  o_ad:.45, o_event:1, o_status:.8, o_bandOff:.22, o_labOff:.38, o_now:.75, o_compBorder:.16, o_compFill:.32
 };
 let V={...DEF};
 try{const s=JSON.parse(localStorage.getItem('hc-sim')||'{}');for(const k in s)if(k in DEF)V[k]=s[k];
  // v1.5 changed some defaults: settings saved by older versions take the new ones
- if(s._v&&s._v<'1.6'&&s.mm===37)V.mm=38; // Galaxy Watch Ultra: 1.5-inch screen, about 38 mm
+ if(s._v&&s._v<'1.6'&&s.mm===37)V.mm=38;
+ if(s._v&&s._v<'1.7'&&s.markerFill==='#9e0303')V.markerFill='#9b111e'; // ruby // Galaxy Watch Ultra: 1.5-inch screen, about 38 mm
  if(s._v&&s._v<'1.5')Object.assign(V,{tick:'none',comps:'pill',yearY:DEF.yearY,eventY:DEF.eventY,eventW:DEF.eventW,statusGap:DEF.statusGap});}catch(e){}
 const rgba=(h,o)=>{const [r,g,b]=hex(h);return `rgba(${r},${g},${b},${o})`;};
-function save(){try{localStorage.setItem('hc-sim',JSON.stringify({...V,_v:'1.6'}));}catch(e){}}
+function save(){try{localStorage.setItem('hc-sim',JSON.stringify({...V,_v:'1.7'}));}catch(e){}}
 
 /* ---------- time ---------- */
 let live=true, manualIdx=0, ff=0;
@@ -389,7 +392,9 @@ function ring(i,ink,aod,lit){ // lit: the period's frieze colour, used for the c
  const [x1,y1]=pt(NOWA,R-9),[x2,y2]=pt(NOWA,R+9);
  s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${V.c_now||ink}" stroke-opacity="${V.o_now}" stroke-width="1.5"></line>`;
  const [mx,my]=pt(i/4,R);
- s+=`<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="8" fill="${aod?'#5a1010':V.markerFill}" stroke="${V.c_marker||ink}" stroke-width="2"></circle>`;
+ const mf=V.markerFill;
+ s+=`<defs><radialGradient id="ruby" cx=".62" cy=".32" r=".75"><stop offset="0" stop-color="${mixHex(mf,'#ff6a7a',.45)}"></stop><stop offset=".45" stop-color="${mf}"></stop><stop offset="1" stop-color="${mixHex(mf,'#000000',.55)}"></stop></radialGradient></defs>`; // a cabochon ruby, lit from the upper right
+ s+=`<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="8" fill="${aod?'#5a1010':'url(#ruby)'}" stroke="${V.c_marker||ink}" stroke-width="2"></circle>`;
  $('ringSvg').innerHTML=s;
 }
 
@@ -544,7 +549,7 @@ const COLS=[
  ['h','Year'],['c_year','Year digits','col'],['c_ad','AD','col'],['o_ad','AD strength','range',0,1,.05],
  ['h','Text'],['c_event','Event text','col'],['o_event','Event text strength','range',.3,1,.05],['c_status','Scheduled / Perhaps / Sci-fi label','col'],['o_status','Label strength','range',0,1,.05],
  ['h','Era lines'],['c_bandOn','Current era line (Auto: the frieze colour)','col'],['c_bandOff','Other era lines','col'],['o_bandOff','Other lines strength','range',0,1,.02],
- ['c_now','“Now” tick (2026)','col'],['o_now','“Now” tick strength','range',0,1,.05],['markerFill','Marker dot','color'],['c_marker','Marker ring','col'],
+ ['c_now','“Now” tick (2026)','col'],['o_now','“Now” tick strength','range',0,1,.05],['markerFill','Marker dot (ruby)','color'],['c_marker','Marker ring','col'],
  ['h','Era names'],['c_labOn','Current era name','col'],['c_labOff','Other era names','col'],['o_labOff','Other names strength','range',0,1,.02],
  ['h','Complications'],['c_compText','Text and icon','col'],['c_compBorder','Border','col'],['o_compBorder','Border strength','range',0,1,.02],['c_compFill','Fill','col'],['o_compFill','Fill strength','range',0,1,.02]
 ];
