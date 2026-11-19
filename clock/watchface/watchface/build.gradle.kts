@@ -13,8 +13,8 @@ android {
         applicationId = "com.timetravelco.historyclock.watchface"
         minSdk = 33
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
     }
 
     // A fixed development key, so every cloud build can update the face already on the watch

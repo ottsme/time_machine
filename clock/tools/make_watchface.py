@@ -120,45 +120,66 @@ def background():
     return '\n'.join(s)
 
 
-def frieze():
-    """The 1900s drafting ruler: ticks every 1.5 degrees, longer every 7.5 and 15."""
-    fo, fi = FRIEZE_R, FRIEZE_R - FRIEZE_W
-    lines = []
-    for n in range(240):
-        a = n * 1.5
-        big, half = n % 10 == 0, n % 5 == 0
-        r2 = fi if big else (fi + FRIEZE_W * .35 if half else fi + FRIEZE_W * .55)
-        x1, y1 = pt(a, fo - 1)
-        x2, y2 = pt(a, r2)
-        lines.append(f'<Line startX="{f1(x1)}" startY="{f1(y1)}" endX="{f1(x2)}" endY="{f1(y2)}">'
-                     f'<Stroke color="#ffe6d2a0" thickness="{1.4 if big else 1.1}"/></Line>')   # v0.1: fixed warm gold; drift comes later
-    return ('<Group name="frieze" x="0" y="0" width="450" height="450">'
-            '<Variant mode="AMBIENT" target="alpha" value="0"/>'
-            '<PartDraw x="0" y="0" width="450" height="450" alpha="90">' + ''.join(lines) + '</PartDraw></Group>')
+# The nine friezes, one per sub-period (as in the simulator), each fading into the next over the
+# last FADE minutes before the change. They are drawn by the simulator's own pattern code and
+# saved as images (clock/tools/render_friezes.py): Watch Face Format has no free-form paths.
+# White images, tinted with the period's frieze colour, which drifts like the background.
+PERIODS = [(0, 'laurel'), (200, 'meander'), (330, 'tesserae'), (600, 'knotwork'), (1100, 'tracery'),
+           (1500, 'starchart'), (1800, 'gears'), (1900, 'blueprint'), (2027, 'orbits')]
+FADE = 10
+
+
+def period_alpha(n, full=255):
+    """Alpha of period n's frieze: full inside its years, fading out over the last FADE minutes
+    before the next period while that one fades in (as in the simulator)."""
+    s = idx(PERIODS[n][0])
+    e = idx(PERIODS[n + 1][0]) if n + 1 < len(PERIODS) else 99999
+    f1_ = FADE + 1
+    # fading in during the previous period's last FADE minutes
+    fin = f'({full}*(1-({s}-{I})/{f1_}))' if n > 0 else '0'
+    fout = f'({full}*(({e}-{I})/{f1_}))'
+    return (f'(({s}>{I})?(({I}>={s - FADE})?{fin}:0):'
+            f'(({e}>{I})?((({I})>={e - FADE})?{fout}:{full}):0))')
+
+
+def friezes():
+    s = ['<Group name="friezes" x="0" y="0" width="450" height="450">',
+         '<Variant mode="AMBIENT" target="alpha" value="0"/>']
+    for n, (yr, key) in enumerate(PERIODS):
+        s.append(f'<PartImage x="0" y="0" width="450" height="450" alpha="0" tintColor="#ffffffff">'
+                 f'<Transform target="alpha" value="{period_alpha(n)}"/>'
+                 f'<Transform target="tintColor" value="{drift("pat")}"/>'
+                 f'<Image resource="frieze_{key}"/></PartImage>')
+    s.append('</Group>')
+    return '\n'.join(s)
 
 
 def seconds_glow():
-    """A light travelling once round the frieze every minute: bright segments whose alpha
-    depends on how far behind the moving head they are (a 100 degree tail)."""
+    """A light travelling once round the frieze every minute, lighting the ornament itself:
+    bright arc segments with a fading tail, masked by full-strength copies of the friezes."""
     fo, fi = FRIEZE_R, FRIEZE_R - FRIEZE_W
+    mid, thick = (fo + fi) / 2, FRIEZE_W + 6
     head = '([SECOND]*6+[MILLISECOND]*0.006)'
-    tail = 100
-    parts = []
-    for n in range(72):                  # one segment per 5 degrees
-        a = n * 5
-        lag = f'(({head}-{a}+360)%360)'   # degrees behind the head, 0..360
-        alpha = f'(({tail}>{lag})?(230*(1-{lag}/{tail})*(1-{lag}/{tail})):0)'
-        ticks = []
-        for k in range(3):               # three ruler ticks per segment, matching the frieze
-            b = a + k * 1.5
-            x1, y1 = pt(b, fo - 1)
-            x2, y2 = pt(b, fi + FRIEZE_W * .3)
-            ticks.append(f'<Line startX="{f1(x1)}" startY="{f1(y1)}" endX="{f1(x2)}" endY="{f1(y2)}">'
-                         f'<Stroke color="#ffffff" thickness="1.6"/></Line>')
-        parts.append(f'<PartDraw x="0" y="0" width="450" height="450" alpha="0">'
-                     f'<Transform target="alpha" value="{alpha}"/>' + ''.join(ticks) + '</PartDraw>')
+    tail, seg = 100, 5
+    mask = []
+    for n, (yr, key) in enumerate(PERIODS):
+        mask.append(f'<PartImage x="0" y="0" width="450" height="450" alpha="0">'
+                    f'<Transform target="alpha" value="{period_alpha(n)}"/>'
+                    f'<Image resource="frieze_{key}_mask"/></PartImage>')
+    light = []
+    for n in range(360 // seg):
+        a = n * seg
+        lag = f'(({head}-{a}+360)%360)'
+        alpha = f'(({tail}>{lag})?(235*(1-{lag}/{tail})*(1-{lag}/{tail})):0)'
+        light.append(f'<PartDraw x="0" y="0" width="450" height="450" alpha="0">'
+                     f'<Transform target="alpha" value="{alpha}"/>'
+                     f'<Arc centerX="{C}" centerY="{C}" width="{2 * mid}" height="{2 * mid}" startAngle="{a}" endAngle="{a + seg + 0.5}">'
+                     f'<Stroke color="#ffffffff" thickness="{thick}"/></Arc></PartDraw>')
     return ('<Group name="seconds_glow" x="0" y="0" width="450" height="450">'
-            '<Variant mode="AMBIENT" target="alpha" value="0"/>' + ''.join(parts) + '</Group>')
+            '<Variant mode="AMBIENT" target="alpha" value="0"/>'
+            '<Group name="glow_mask" x="0" y="0" width="450" height="450" renderMode="MASK">' + ''.join(mask) + '</Group>'
+            '<Group name="glow_light" x="0" y="0" width="450" height="450" renderMode="SOURCE">' + ''.join(light) + '</Group>'
+            '</Group>')
 
 
 def era_ring():
@@ -181,7 +202,7 @@ def era_ring():
         # era name along the ring: upright on the lower half
         mid = (a1 + a2) / 2
         low = 90 < mid < 270
-        rr = 201 if low else 192
+        rr = 203 if low else 191
         if low:
             sa, ea, d = a2 - 1, a1 + 1, 'COUNTER_CLOCKWISE'
         else:
@@ -189,7 +210,7 @@ def era_ring():
         s.append(f'<PartText x="0" y="0" width="450" height="450" alpha="97">'
                  f'<Transform target="alpha" value="({on}?242:97)"/>'
                  f'<TextCircular centerX="{C}" centerY="{C}" width="{2 * rr}" height="{2 * rr}" startAngle="{sa:.2f}" endAngle="{ea:.2f}" direction="{d}">'
-                 f'<Font family="inter_semibold" size="10" color="#ffffff" letterSpacing="0.24">{name}</Font></TextCircular></PartText>')
+                 f'<Font family="inter_semibold" size="13" color="#ffffff" letterSpacing="0.18">{name}</Font></TextCircular></PartText>')
     # the "now" tick (2026)
     x1, y1 = pt(NOWA, R - 9)
     x2, y2 = pt(NOWA, R + 9)
@@ -212,8 +233,8 @@ def year():
     size, top = 112, 146 - 56
     adv = 0.491 * size + 0.01 * size                   # digit advance plus the simulator's letter-spacing
     digits = f'(({YEAR}>999)?4:(({YEAR}>99)?3:(({YEAR}>9)?2:1)))'
-    ad_size = 0.15 * size
-    ad_w = 34                                          # box for "AD", right-aligned
+    ad_size = 0.17 * size
+    ad_w = 44                                          # box for "AD", right-aligned
     ad_x = f'({C}-{digits}*{adv:.2f}/2-{ad_size * .6:.1f}-{ad_w})'
     return f'''<Group name="year" x="0" y="0" width="450" height="450">
 <PartText x="0" y="{top}" width="450" height="{size + 20}">
@@ -222,7 +243,7 @@ def year():
 <Template>%d<Parameter expression="{YEAR}"/></Template></Font></Text>
 <Variant mode="AMBIENT" target="alpha" value="200"/>
 </PartText>
-<PartText x="0" y="{round(top + size * .72)}" width="{ad_w}" height="24" alpha="115">
+<PartText x="0" y="{round(top + size * .72)}" width="{ad_w}" height="28" alpha="150">
 <Transform target="x" value="{ad_x}"/>
 <Text align="END"><Font family="inter_medium" size="{ad_size:.1f}" color="#fff2e4cf" letterSpacing="0.12">
 <Transform target="color" value="{drift('ink')}"/>AD</Font></Text>
@@ -230,58 +251,114 @@ def year():
 </Group>'''
 
 
+EVENT_SIZE, EVENT_TOP, MAX_LINES = 22, 222, 3     # 22 px (was 20): larger for legibility on the wrist
+LH = EVENT_SIZE * 1.3
+
+
 def chord(y0, y1):
+    """Widest centred line between heights y0 and y1 that stays inside the clearance line."""
     r = FRIEZE_R - FRIEZE_W - CLEAR
     dy = max(abs(y0 - C), abs(y1 - C))
-    return min(340, 2 * math.sqrt(max(0, r * r - dy * dy)))
+    return min(400, 2 * math.sqrt(max(0, r * r - dy * dy)))
+
+
+_FONT = None
+
+
+def text_width(t, size):
+    global _FONT
+    if _FONT is None:
+        from fontTools.ttLib import TTFont
+        f = TTFont(os.path.join(HERE, '..', 'watchface', 'watchface', 'src', 'main', 'res', 'font', 'inter_medium.ttf'))
+        _FONT = (f.getBestCmap(), f['hmtx'], f['head'].unitsPerEm)
+    cm, hm, upm = _FONT
+    return sum(hm[cm.get(ord(ch), cm[ord('?')])][0] for ch in t) / upm * size
+
+
+def layout_text(t):
+    """Up to three lines, each as wide as the frieze allows at its height; the fewest lines that fit,
+    breaks balanced between them; shorter texts centred in the three-line block (as in the simulator).
+    The companion app will do the same on the watch."""
+    words = t.split()
+    for k in range(1, MAX_LINES + 1):
+        off = (MAX_LINES - k) * LH / 2
+        slots = [(EVENT_TOP + off + j * LH, chord(EVENT_TOP + off + j * LH, EVENT_TOP + off + (j + 1) * LH)) for j in range(k)]
+        best = None
+
+        def cuts(start, j, acc):
+            nonlocal best
+            if j == k - 1:
+                line = ' '.join(words[start:])
+                if not line or text_width(line, EVENT_SIZE) > slots[j][1]:
+                    return
+                parts = acc + [line]
+                fill = [text_width(x, EVENT_SIZE) / slots[n][1] for n, x in enumerate(parts)]
+                m = sum(fill) / len(fill)
+                cost = sum((x - m) ** 2 for x in fill)
+                if best is None or cost < best[0]:
+                    best = (cost, parts)
+                return
+            for c in range(start + 1, len(words) - (k - 1 - j) + 1):
+                line = ' '.join(words[start:c])
+                if text_width(line, EVENT_SIZE) > slots[j][1]:
+                    break
+                cuts(c, j + 1, acc + [line])
+        cuts(0, 0, [])
+        if best:
+            return [(slots[n][0], slots[n][1], line) for n, line in enumerate(best[1])]
+    raise ValueError('text does not fit in three lines: ' + t)
+
+
+SAMPLE = 'Construction of the Taj Mahal begins'          # fixed sample until the companion app sends real events
 
 
 def event_text():
-    """Two lines of fixed sample text, each as wide as the frieze allows at its height.
-    On the real face the companion app will break the text into lines and send them."""
-    size, lh = 20, 26
-    top = 226 + lh / 2                                  # two lines centred in the three-line block
-    lines = ['First test of the History Clock', 'on a real Galaxy Watch Ultra']
     s = ['<Group name="event" x="0" y="0" width="450" height="450">']
-    for n, t in enumerate(lines):
-        y = top + n * lh
-        w = chord(y, y + lh)
-        s.append(f'<PartText x="{round(C - w / 2)}" y="{round(y)}" width="{round(w)}" height="{lh}">'
-                 f'<Text align="CENTER" maxLines="1"><Font family="inter_medium" size="{size}" color="#fff2e4cf">'
-                 f'<Transform target="color" value="{drift("ink")}"/>{sx.escape(t)}</Font></Text>'
+    for y, w, line in layout_text(SAMPLE):
+        s.append(f'<PartText x="{round(C - w / 2)}" y="{round(y)}" width="{round(w)}" height="{round(LH) + 2}">'
+                 f'<Text align="CENTER" maxLines="1"><Font family="inter_medium" size="{EVENT_SIZE}" color="#fff2e4cf">'
+                 f'<Transform target="color" value="{drift("ink")}"/>{sx.escape(line)}</Font></Text>'
                  f'<Variant mode="AMBIENT" target="alpha" value="180"/></PartText>')
     s.append('</Group>')
     return '\n'.join(s)
 
 
+PILL_W, PILL_H = 124, 42                                  # 25% larger than in v0.3
+
+
+def pill_box():
+    r = FRIEZE_R - FRIEZE_W - CLEAR
+    rc, cx = PILL_H / 2, PILL_W / 2 - PILL_H / 2
+    bottom = C + math.sqrt((r - rc) ** 2 - cx ** 2) + rc - 2
+    return C - PILL_W / 2, bottom - PILL_H
+
+
 def pill():
     """Day and date in a pill at 6 o'clock, its lower corners against the clearance line."""
-    w, h = 100, 34
-    r = FRIEZE_R - FRIEZE_W - CLEAR
-    rc, cx = h / 2, w / 2 - h / 2
-    bottom = C + math.sqrt((r - rc) ** 2 - cx ** 2) + rc - 2
-    y = bottom - h
+    x, y = pill_box()
+    w, h = PILL_W, PILL_H
     return f'''<Group name="pill" x="0" y="0" width="450" height="450">
 <Variant mode="AMBIENT" target="alpha" value="0"/>
-<PartDraw x="{round(C - w / 2)}" y="{round(y)}" width="{w}" height="{h}">
+<PartDraw x="{round(x)}" y="{round(y)}" width="{w}" height="{h}">
 <RoundRectangle x="0" y="0" width="{w}" height="{h}" cornerRadiusX="{h / 2}" cornerRadiusY="{h / 2}">
 <Fill color="#52000000"/><Stroke color="#29ffffff" thickness="1"/></RoundRectangle>
 </PartDraw>
-<PartText x="{round(C - w / 2)}" y="{round(y + 8)}" width="{w}" height="20">
-<Text align="CENTER"><Font family="inter_semibold" size="13" color="#fff2e4cf" letterSpacing="0.08">
+<PartText x="{round(x)}" y="{round(y + 10)}" width="{w}" height="24">
+<Text align="CENTER"><Font family="inter_semibold" size="16" color="#fff2e4cf" letterSpacing="0.08">
 <Transform target="color" value="{drift('ink')}"/>
 <Upper><Template>%s %d<Parameter expression="[DAY_OF_WEEK_S]"/><Parameter expression="[DAY]"/></Template></Upper></Font></Text>
 </PartText>
 </Group>'''
 
 
-VERSION = '0.3'
+VERSION = '0.4'
 
 
 def build_tag():
-    """Tiny build number under the pill, so we always know which build the watch is running (development only)."""
-    return (f'<PartText x="200" y="392" width="50" height="14" alpha="90"><Variant mode="AMBIENT" target="alpha" value="0"/>'
-            f'<Text align="CENTER"><Font family="inter_medium" size="9" color="#ffffff">v{VERSION}</Font></Text></PartText>')
+    """Build number just above the pill, readable, so we know which build the watch runs (development only)."""
+    x, y = pill_box()
+    return (f'<PartText x="185" y="{round(y - 22)}" width="80" height="18" alpha="130"><Variant mode="AMBIENT" target="alpha" value="0"/>'
+            f'<Text align="CENTER"><Font family="inter_medium" size="13" color="#ffffff">v{VERSION}</Font></Text></PartText>')
 
 
 def watchface():
@@ -292,7 +369,7 @@ def watchface():
 <Metadata key="PREVIEW_TIME" value="18:09:30"/>
 <Scene backgroundColor="#ff000000">
 {background()}
-{frieze()}
+{friezes()}
 {seconds_glow()}
 {era_ring()}
 {year()}
