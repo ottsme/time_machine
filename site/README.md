@@ -8,6 +8,7 @@ A working mockup of the new timetravelco.com home page, for tuning the look and 
 
 - On a large screen the tuning panel sits on the right. On a phone, tap the round button bottom right to open it.
 - Tuned values are kept on the device. "Copy values" puts the current numbers on the clipboard for implementation, including the length of one full loop.
+- Installable: open it on the phone and choose "Add to Home screen" (or "Install app"). When online it always loads the newest version.
 - "Restart roll" starts the headline from the top, to judge the timing.
 - People who turn motion off in their system settings see a still headline ("road", "13.8 billion"); screen readers get the whole sentence with all three numbers.
 
