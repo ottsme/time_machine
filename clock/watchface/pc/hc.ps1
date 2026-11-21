@@ -10,31 +10,41 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 $apkUrl = "https://github.com/ottsme/time_machine/releases/download/watchface-latest/history-clock-watchface.apk"
 $downloads = Join-Path $env:USERPROFILE "Downloads"
 
+function Test-Watch($d) {
+    # a connection adb still lists may be stale (old network, old port): check it really answers
+    $r = & $adb -s $d shell echo ok 2>$null
+    return ($r -match "ok")
+}
+
 function Get-Watch {
     & $adb start-server | Out-Null
-    # 1. already connected?
-    $dev = & $adb devices | Select-String "`tdevice$" | ForEach-Object { ($_ -split "`t")[0] } | Select-Object -First 1
-    if ($dev) { return $dev }
+    # 1. already connected and answering?
+    $listed = & $adb devices | Select-String "`tdevice$" | ForEach-Object { ($_ -split "`t")[0] }
+    foreach ($d in $listed) {
+        if (Test-Watch $d) { return $d }
+        & $adb disconnect $d | Out-Null          # stale: drop it
+    }
     # 2. find the watch on the network by itself (works once paired, while Wireless debugging is on)
     Write-Host "Looking for the watch on the network..."
-    for ($i = 0; $i -lt 5 -and -not $dev; $i++) {
-        $svc = & $adb mdns services | Select-String "_adb-tls-connect" | Select-Object -First 1
-        if ($svc) {
-            $addr = (($svc.ToString().Trim()) -split "\s+")[-1]
+    for ($i = 0; $i -lt 5; $i++) {
+        $addrs = & $adb mdns services | Select-String "_adb-tls-connect" | ForEach-Object { (($_.ToString().Trim()) -split "\s+")[-1] } | Select-Object -Unique
+        foreach ($addr in $addrs) {
             & $adb connect $addr | Out-Host
             Start-Sleep -Seconds 1
-            $dev = & $adb devices | Select-String "`tdevice$" | ForEach-Object { ($_ -split "`t")[0] } | Select-Object -First 1
-        } else { Start-Sleep -Seconds 2 }
+            if (Test-Watch $addr) { return $addr }
+            & $adb disconnect $addr | Out-Null
+        }
+        Start-Sleep -Seconds 2
     }
-    if ($dev) { return $dev }
     # 3. ask for the address shown on the watch
     Write-Host ""
     Write-Host "Could not find the watch by itself. On the watch: Settings > Developer options > Wireless debugging."
+    Write-Host "(If the PC or the watch changed network, run 'Pair with the watch' first.)"
     $addr = Read-Host "Type the IP address and port shown there (for example 192.168.18.118:33311)"
     & $adb connect $addr | Out-Host
-    $dev = & $adb devices | Select-String "`tdevice$" | ForEach-Object { ($_ -split "`t")[0] } | Select-Object -First 1
-    if (-not $dev) { throw "The watch is not connected. Is Wireless debugging on, and the watch on the same Wi-Fi?" }
-    return $dev
+    Start-Sleep -Seconds 1
+    if (Test-Watch $addr) { return $addr }
+    throw "The watch is not connected. Is Wireless debugging on, and the watch on the same Wi-Fi as the PC?"
 }
 
 switch ($Action) {
