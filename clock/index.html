@@ -152,7 +152,7 @@ body.sheet #sheet{transform:none}
  <div class="pane" id="p-layout"><div id="layoutCtl"></div>
   <div class="row"><button class="btn" id="reset">Reset all</button><button class="btn" id="copy">Copy values</button></div>
   <textarea id="out" readonly aria-label="Current values"></textarea>
-  <p class="hint">History Clock simulator v2.1. Values are kept on this phone.</p>
+  <p class="hint">History Clock simulator v2.2. Values are kept on this phone.</p>
  </div>
  <div class="pane" id="p-review">
   <h3>This year</h3>
@@ -167,6 +167,10 @@ body.sheet #sheet{transform:none}
   <input type="file" id="flagFile" accept=".json,application/json" style="display:none">
   <p class="hint" id="flagMsg">Notes are kept in this browser only. Save them to a file now and then, and load the file to move them between the app and Chrome.</p>
   <textarea id="flagOut" readonly aria-label="Flag list"></textarea>
+  <h3>Texts</h3>
+  <p class="hint" id="textsMsg"></p>
+  <div class="row"><button class="btn" id="textsLoad">Load texts from file</button><button class="btn" id="textsSample">Use sample texts</button></div>
+  <input type="file" id="textsFile" accept=".js,.json,text/javascript,application/json" style="display:none">
  </div>
 </div>
 
@@ -210,7 +214,13 @@ const yearOf=i=>Math.floor(i/60)*100+i%60;
 const idxOfYear=y=>Math.floor(y/100)*60+y%100;
 
 /* ---------- events ---------- */
-const EV=window.HC_EVENTS||{};
+/* Event texts. The public site carries only sample texts; the full, private texts are loaded from a file
+   (Review > Load texts from file) and kept in this browser only (localStorage hc-events). */
+function parseTexts(src){const o={};let n=0;
+ for(const m of src.matchAll(/^\s*"?(\d+)"?\s*:\s*(\{.*?\})\s*,?\s*$/gm)){try{o[+m[1]]=JSON.parse(m[2]);n++;}catch(e){}}
+ return n?o:null;}
+let EV=window.HC_EVENTS||{},EV_SOURCE='sample';
+try{const st=localStorage.getItem('hc-events');if(st){const o=JSON.parse(st);if(o&&Object.keys(o).length){EV=o;EV_SOURCE='file';}}}catch(e){}
 const PH=[
  y=>`Placeholder event, AD ${y}`,
  y=>`Placeholder for the event of AD ${y}, two lines`,
@@ -634,6 +644,17 @@ $('flag').onclick=()=>{const y=yearOf(curIdx());flags[y]={note:$('note').value.t
 $('flagCopy').onclick=()=>{const t=Object.keys(flags).map(Number).sort((a,b)=>a-b).map(y=>`${y}\t${flags[y].text}\t${flags[y].note||''}`).join('\n');
  const o=$('flagOut');o.style.display='block';o.value=t;try{navigator.clipboard.writeText(t);$('flagCopy').textContent='Copied';setTimeout(()=>$('flagCopy').textContent='Copy list',1500);}catch(e){}};
 listFlags();
+function textsInfo(){$('textsMsg').textContent=EV_SOURCE==='file'
+ ?`Showing your own texts: ${Object.keys(EV).length} years, loaded from a file and kept in this browser only.`
+ :`Showing sample texts (${Object.keys(EV).length} years). Load the private texts file to see all of them; it stays in this browser and is never sent anywhere.`;}
+textsInfo();
+$('textsLoad').onclick=()=>$('textsFile').click();
+$('textsFile').onchange=async()=>{const f=$('textsFile').files[0];if(!f)return;
+ const o=parseTexts(await f.text());
+ if(!o){$('textsMsg').textContent='That file does not look like History Clock texts.';}
+ else{try{localStorage.setItem('hc-events',JSON.stringify(o));}catch(e){}EV=o;EV_SOURCE='file';textsInfo();lastDrawn=-1;draw();}
+ $('textsFile').value='';};
+$('textsSample').onclick=()=>{try{localStorage.removeItem('hc-events');}catch(e){}EV=window.HC_EVENTS||{};EV_SOURCE='sample';textsInfo();lastDrawn=-1;draw();};
 $('flagSave').onclick=()=>{
  const blob=new Blob([JSON.stringify({app:'History Clock simulator',saved:new Date().toISOString(),flags},null,1)],{type:'application/json'});
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`history-clock-notes-${new Date().toISOString().slice(0,10)}.json`;

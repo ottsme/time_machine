@@ -6,7 +6,7 @@ Built for a Galaxy S25+ held upright; install it from Chrome with "Add to home s
 Live: https://ottsme.github.io/time_machine/clock/
 
 - `index.html` — the face and the tuning sheet (Time, Look, Colours, Layout, Review). One edit button, bottom right.
-- `data.js` — event texts by year. Years not in the file show placeholder lines. Replace this file with the real list.
+- `data.js` — **sample texts only** (21 years); other years show placeholder lines. The full texts are private (repository `history_clock_data`, with the watch face and its tools); load them with Review → Load texts from file. They stay in that browser and are never published.
 - Backgrounds are drawn in code: colours drift through keyframe years; each sub-period has its own frieze (laurels, meander, mosaic, knotwork, tracery, astrolabe limb, cogs, drafting scale, orbits) and faint field texture, cross-fading over the last minutes before a change.
 - The frieze rule: the event text and the complication always stay inside the frieze. The text takes up to three lines, each as wide as the frieze allows at its height; line breaks are balanced, and shorter texts are centred in the three-line space.
 - One complication by default: a pill at 6 o'clock with the day and date (Layout → Complications; the old two circles remain as "arc").
@@ -17,7 +17,7 @@ Live: https://ottsme.github.io/time_machine/clock/
 
 ## Updating the texts
 
-Edit the Excel, then rebuild `data.js` (needs Python with openpyxl):
+The texts, the Excel and the watch face build live in the private repository `ottsme/history_clock_data`.
 
     python3 -I tools/xlsx_to_data.py History_Clock_4_Claude.xlsx > data.js
 
