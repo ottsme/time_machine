@@ -202,7 +202,7 @@ def era_ring():
         # era name along the ring: upright on the lower half
         mid = (a1 + a2) / 2
         low = 90 < mid < 270
-        rr = 203 if low else 191
+        rr = 203 if low else 196   # measured on the watch: upper names sat on the frieze at 191
         if low:
             sa, ea, d = a2 - 1, a1 + 1, 'COUNTER_CLOCKWISE'
         else:
@@ -222,7 +222,7 @@ def era_ring():
              f'<Ellipse x="{C - 8}" y="{C - R - 8}" width="16" height="16">'
              f'<Fill color="#9b111e"><RadialGradient centerX="{C + 3}" centerY="{C - R - 3}" radius="12" '
              f'colors="#ffd4475a #ff9b111e #ff45070d" positions="0 0.45 1"/></Fill>'
-             f'<Stroke color="#fff4ead8" thickness="2"/></Ellipse></PartDraw>')
+             f'<Stroke color="#fff4ead8" thickness="1.1"/></Ellipse></PartDraw>')   # a fine setting ring
     s.append('</Group>')
     return '\n'.join(s)
 
@@ -251,8 +251,11 @@ def year():
 </Group>'''
 
 
-EVENT_SIZE, EVENT_TOP, MAX_LINES = 22, 222, 3     # 22 px (was 20): larger for legibility on the wrist
+EVENT_SIZE, MAX_LINES = 24, 3     # 24 px since v0.5 (20 in v0.3, 22 in v0.4): legibility on the wrist
 LH = EVENT_SIZE * 1.3
+TEXT_CENTRE = 266                 # middle of the space between the year (bottom ~188) and the pill (top ~341)
+EVENT_TOP = TEXT_CENTRE - MAX_LINES * LH / 2
+AOD_SHIFT = 22                    # always-on: no pill below, so the text moves down to sit in the middle
 
 
 def chord(y0, y1):
@@ -313,7 +316,8 @@ SAMPLE = 'Construction of the Taj Mahal begins'          # fixed sample until th
 
 
 def event_text():
-    s = ['<Group name="event" x="0" y="0" width="450" height="450">']
+    s = ['<Group name="event" x="0" y="0" width="450" height="450">',
+         f'<Variant mode="AMBIENT" target="y" value="{AOD_SHIFT}"/>']
     for y, w, line in layout_text(SAMPLE):
         s.append(f'<PartText x="{round(C - w / 2)}" y="{round(y)}" width="{round(w)}" height="{round(LH) + 2}">'
                  f'<Text align="CENTER" maxLines="1"><Font family="inter_medium" size="{EVENT_SIZE}" color="#fff2e4cf">'
@@ -351,13 +355,12 @@ def pill():
 </Group>'''
 
 
-VERSION = '0.4'
+VERSION = '0.5'
 
 
 def build_tag():
-    """Build number just above the pill, readable, so we know which build the watch runs (development only)."""
-    x, y = pill_box()
-    return (f'<PartText x="185" y="{round(y - 22)}" width="80" height="18" alpha="130"><Variant mode="AMBIENT" target="alpha" value="0"/>'
+    """Build number at 12 o'clock, between the ring and the frieze, readable but out of the way (development only)."""
+    return (f'<PartText x="185" y="22" width="80" height="18" alpha="140"><Variant mode="AMBIENT" target="alpha" value="0"/>'
             f'<Text align="CENTER"><Font family="inter_medium" size="13" color="#ffffff">v{VERSION}</Font></Text></PartText>')
 
 
