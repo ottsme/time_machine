@@ -231,11 +231,19 @@ def year():
     """The year: centred number, small muted AD hanging to its left on the baseline.
     Cormorant digits are made equal-width (0.491 em), so the number's width depends only on the digit count."""
     size, top = 112, 146 - 56
-    adv = 0.491 * size + 0.01 * size                   # digit advance plus the simulator's letter-spacing
+    adv = 0.491 * size                                 # digit advance (Cormorant digits made equal-width)
     digits = f'(({YEAR}>999)?4:(({YEAR}>99)?3:(({YEAR}>9)?2:1)))'
+    # the leading digit's left side bearing (units per 1000), so AD sits a fixed distance from the ink, not the box
+    lsb = {0: 35, 1: 78, 2: 53, 3: 76, 4: 38, 5: 70, 6: 57, 7: 68, 8: 40, 9: 48}
+    lead = f'floor({YEAR}/(({YEAR}>999)?1000:(({YEAR}>99)?100:(({YEAR}>9)?10:1))))'
+    lead_lsb = '0'
+    for d in range(9, -1, -1):
+        lead_lsb = f'(({lead}=={d})?{lsb[d]}:{lead_lsb})'
     ad_size = 0.17 * size
     ad_w = 44                                          # box for "AD", right-aligned
-    ad_x = f'({C}-{digits}*{adv:.2f}/2-{ad_size * .6:.1f}-{ad_w})'
+    gap = 7                                            # visible space between AD and the first digit
+    trail = 0.12 * ad_size                             # letter-spacing after the D
+    ad_x = f'({C}-{digits}*{adv:.2f}/2+{lead_lsb}*{size}/1000-{gap}+{trail:.1f}-{ad_w})'
     return f'''<Group name="year" x="0" y="0" width="450" height="450">
 <PartText x="0" y="{top}" width="450" height="{size + 20}">
 <Text align="CENTER"><Font family="cormorant_garamond_semibold" size="{size}" color="#fff2e4cf">
