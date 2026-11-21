@@ -16,6 +16,7 @@ and the risky parts of the design:
 Fixed sample text only: the companion app that supplies the real events comes later.
 """
 import math
+import re
 import os
 import xml.sax.saxutils as sx
 
@@ -286,11 +287,26 @@ def text_width(t, size):
     return sum(hm[cm.get(ord(ch), cm[ord('?')])][0] for ch in t) / upm * size
 
 
+def tokens(t):
+    """Pieces a line may break after: at spaces, and after a hyphen or dash inside a compound
+    ("Polish-Lithuanian-Teutonic"), keeping the dash at the end of the line."""
+    out = []
+    for w in t.split():
+        parts = re.split(r'(?<=[-–])(?=\w)', w)
+        for n, p in enumerate(parts):
+            out.append((p, ' ' if n == len(parts) - 1 else ''))
+    return out
+
+
+def join(toks):
+    return ''.join(p + g for p, g in toks).rstrip()
+
+
 def layout_text(t):
     """Up to three lines, each as wide as the frieze allows at its height; the fewest lines that fit,
     breaks balanced between them; shorter texts centred in the three-line block (as in the simulator).
     The companion app will do the same on the watch."""
-    words = t.split()
+    words = tokens(t)
     for k in range(1, MAX_LINES + 1):
         off = (MAX_LINES - k) * LH / 2
         slots = [(EVENT_TOP + off + j * LH, chord(EVENT_TOP + off + j * LH, EVENT_TOP + off + (j + 1) * LH)) for j in range(k)]
@@ -299,7 +315,7 @@ def layout_text(t):
         def cuts(start, j, acc):
             nonlocal best
             if j == k - 1:
-                line = ' '.join(words[start:])
+                line = join(words[start:])
                 if not line or text_width(line, EVENT_SIZE) > slots[j][1]:
                     return
                 parts = acc + [line]
@@ -310,7 +326,7 @@ def layout_text(t):
                     best = (cost, parts)
                 return
             for c in range(start + 1, len(words) - (k - 1 - j) + 1):
-                line = ' '.join(words[start:c])
+                line = join(words[start:c])
                 if text_width(line, EVENT_SIZE) > slots[j][1]:
                     break
                 cuts(c, j + 1, acc + [line])
@@ -320,17 +336,91 @@ def layout_text(t):
     raise ValueError('text does not fit in three lines: ' + t)
 
 
-SAMPLE = 'Construction of the Taj Mahal begins'          # fixed sample until the companion app sends real events
+DATA = os.path.join(HERE, '..', 'data.js')                 # the same event data the simulator uses
+
+
+def load_events():
+    import json
+    txt = open(DATA, encoding='utf-8').read()
+    ev = {}
+    for m in re.finditer(r'^\s*(\d+): (\{.*\}),?$', txt, re.M):
+        ev[idx(int(m.group(1)))] = json.loads(m.group(2))
+    return ev
+
+
+def watch_text(t):
+    # expression strings can't contain straight double quotes: use typographic ones
+    out, opening = [], True
+    for ch in t:
+        if ch == '"':
+            out.append('\u201c' if opening else '\u201d')
+            opening = not opening
+        else:
+            out.append(ch)
+    return ''.join(out)
+
+
+def table(records):
+    """One long string holding a record per minute of the day, each padded (on both sides, so
+    centring is kept) to the same width; the face picks its record with subText."""
+    w = max(1, max(len(r) for r in records))
+    padded = []
+    for r in records:
+        extra = w - len(r)
+        padded.append(' ' * (extra // 2) + r + ' ' * (extra - extra // 2))
+    s = ''.join(padded)
+    expr = f'subText("{s}",{I}*{w},{I}*{w}+{w})'
+    return sx.escape(expr, {'"': '&quot;'})
+
+
+LABELS = {'scheduled': 'SCHEDULED', 'perhaps': 'PERHAPS', 'scifi': 'SCI-FI'}
 
 
 def event_text():
+    """All 1,440 events, built into the face until the companion app supplies them.
+    Each text is broken into lines here, as on the simulator: one line sits in the middle slot,
+    two lines in a pair of half-offset slots, three lines in three slots. Each slot reads its
+    line for the current minute from a table; unused slots get blanks.
+    The future label (SCHEDULED, PERHAPS, SCI-FI) sits just above the first line."""
+    ev = load_events()
+    slots = {'A2': [], 'B2': [], 'A3': [], 'B3': [], 'C3': []}
+    labels = {1: [], 2: [], 3: []}
+    for i in range(1440):
+        e = ev.get(i, {'t': ''})
+        lines = [ln for _, _, ln in layout_text(e['t'])] if e['t'] else []
+        k = len(lines)
+        lines = [watch_text(x) for x in lines]
+        for key in slots:
+            slots[key].append('')
+        if k == 1:
+            slots['B3'][-1] = lines[0]
+        elif k == 2:
+            slots['A2'][-1], slots['B2'][-1] = lines
+        elif k == 3:
+            slots['A3'][-1], slots['B3'][-1], slots['C3'][-1] = lines
+        for n in labels:
+            labels[n].append(LABELS.get(e.get('s'), '') if n == max(k, 1) else '')
+    top3 = EVENT_TOP
+    top2 = EVENT_TOP + LH / 2
+    ys = {'A3': top3, 'B3': top3 + LH, 'C3': top3 + 2 * LH, 'A2': top2, 'B2': top2 + LH}
+    first = {1: top3 + LH, 2: top2, 3: top3}
     s = ['<Group name="event" x="0" y="0" width="450" height="450">',
          f'<Variant mode="AMBIENT" target="y" value="{AOD_SHIFT}"/>']
-    for y, w, line in layout_text(SAMPLE):
+    for key, recs in slots.items():
+        y = ys[key]
+        w = chord(y, y + LH) + 12                     # lines are already broken to fit; a little slack
         s.append(f'<PartText x="{round(C - w / 2)}" y="{round(y)}" width="{round(w)}" height="{round(LH) + 2}">'
                  f'<Text align="CENTER" maxLines="1"><Font family="inter_medium" size="{EVENT_SIZE}" color="#fff2e4cf">'
-                 f'<Transform target="color" value="{drift("ink")}"/>{sx.escape(line)}</Font></Text>'
+                 f'<Transform target="color" value="{drift("ink")}"/>'
+                 f'<Template>%s<Parameter expression="{table(recs)}"/></Template></Font></Text>'
                  f'<Variant mode="AMBIENT" target="alpha" value="180"/></PartText>')
+    for k, recs in labels.items():
+        y = first[k] - 22
+        s.append(f'<PartText x="125" y="{round(y)}" width="200" height="22">'
+                 f'<Text align="CENTER" maxLines="1"><Font family="cormorant_garamond_semibold_italic" size="16" color="#ffe8dcc8" letterSpacing="0.12">'
+                 f'<Transform target="color" value="{drift("ink")}"/>'
+                 f'<Template>%s<Parameter expression="{table(recs)}"/></Template></Font></Text>'
+                 f'<Variant mode="AMBIENT" target="alpha" value="150"/></PartText>')
     s.append('</Group>')
     return '\n'.join(s)
 
@@ -363,7 +453,7 @@ def pill():
 </Group>'''
 
 
-VERSION = '0.6'
+VERSION = '0.7'
 
 
 def build_tag():

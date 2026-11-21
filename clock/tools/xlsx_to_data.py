@@ -13,7 +13,7 @@ import json, re, sys
 import openpyxl
 
 SCIFI = re.compile(r"Star Trek|Terminator|RoboCop|Futurama|Hunger Games|Zero Wing|Sci-?Fi|SciFi|^SF:|Babylon 5|Bicentennial Man|Outward Urge|Invitation to the Game|The Fun They Had|Shiva|Galactic North|\"2312\"", re.I)
-FACT = re.compile(r"\b(yrs|years) (from|fom)\b|\|\s*\d{3,4}\s*\|\s*\(|\b\d{3,4}\s*\(\d{4}\)|\b\d{3,4}\s*\|\s*\(|Declaration of Independence \d{3}|Cambridge \| 1000|Knights Templar 1000|Mickey Mouse 400|State of Israel 300|Yellowstone National Park 450|Schrödinger's cat - 300|Mein Kampf and The Great Gatsby - 500")
+FACT = re.compile(r"\b(yrs|years) (from|fom)\b|\|\s*\d{3,4}\s*\|\s*\(|\b\d{3,4}\s*\(\d{4}[,)]|\b\d{3,4}\s*\(\d{3} BC\)|\b\d{3,4}\s*\|\s*\(|Declaration of Independence \d{3}|Cambridge \| 1000|Knights Templar 1000|Mickey Mouse 400|State of Israel 300|Yellowstone National Park 450|Schrödinger's cat - 300|Mein Kampf and The Great Gatsby - 500")
 PERHAPS_YEARS = {2030, 2041, 2042, 2043, 2045, 2049, 2056, 2122, 2129, 2200, 2350}
 OVERRIDE = {2304: "fact", 2310: "perhaps"}  # year: kind
 
