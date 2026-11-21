@@ -152,7 +152,7 @@ body.sheet #sheet{transform:none}
  <div class="pane" id="p-layout"><div id="layoutCtl"></div>
   <div class="row"><button class="btn" id="reset">Reset all</button><button class="btn" id="copy">Copy values</button></div>
   <textarea id="out" readonly aria-label="Current values"></textarea>
-  <p class="hint">History Clock simulator v2.0. Values are kept on this phone.</p>
+  <p class="hint">History Clock simulator v2.1. Values are kept on this phone.</p>
  </div>
  <div class="pane" id="p-review">
   <h3>This year</h3>
@@ -181,8 +181,8 @@ const DEF={
  accent:'#c9372c', aod:false, bg:true, glow1:0.6, glow2:0.4, grain:0.10, grainScale:0.8, pattern:0.7, fadeMin:10,
  yearFont:'Cormorant Garamond', labelFont:'serif', tick:'none', adPos:'baseline', guides:false, secGlow:true, glowStr:0.7, glowTail:100, eraLabels:true, overflow:true, placeholders:true,
  trueSize:false, mm:38, pxmm:5.4, fit:0.92,
- yearSize:112, yearY:146, eventY:219, eventSize:24, eventW:340, maxLines:3, statusGap:20,
- friezeR:186, friezeW:14, textGap:6,
+ yearSize:112, yearY:146, eventY:215, eventSize:26, eventW:340, maxLines:3, statusGap:20,
+ friezeR:186, friezeW:14, textGap:3,
  comps:'pill', pillW:124, pillH:42, pillLift:2, compR:136, compD:66, compGap:60,
  // colours: '' = automatic (follows the era colour drift), otherwise a fixed colour
  c_year:'', c_ad:'', c_event:'', c_status:'', c_bandOn:'', c_bandOff:'#ffffff', c_labOn:'', c_labOff:'#ffffff', c_now:'#ffffff', c_marker:'#f4ead8', markerFill:'#9b111e',
@@ -195,10 +195,10 @@ try{const s=JSON.parse(localStorage.getItem('hc-sim')||'{}');for(const k in s)if
  if(s._v&&s._v<'1.6'&&s.mm===37)V.mm=38;
  if(s._v&&s._v<'1.7'&&s.markerFill==='#9e0303')V.markerFill='#9b111e';
  if(s._v&&s._v<'1.9')Object.assign(V,{pillW:DEF.pillW,pillH:DEF.pillH});
- if(s._v&&s._v<'2.0')Object.assign(V,{eventY:DEF.eventY,eventSize:DEF.eventSize}); // 24 px since v2.0, as on the watch // larger for legibility, as on the watch // ruby // Galaxy Watch Ultra: 1.5-inch screen, about 38 mm
+ if(s._v&&s._v<'2.1')Object.assign(V,{eventY:DEF.eventY,eventSize:DEF.eventSize,textGap:DEF.textGap}); // 26 px since v2.1, as on the watch // larger for legibility, as on the watch // ruby // Galaxy Watch Ultra: 1.5-inch screen, about 38 mm
  if(s._v&&s._v<'1.5')Object.assign(V,{tick:'none',comps:'pill',yearY:DEF.yearY,eventY:DEF.eventY,eventW:DEF.eventW,statusGap:DEF.statusGap});}catch(e){}
 const rgba=(h,o)=>{const [r,g,b]=hex(h);return `rgba(${r},${g},${b},${o})`;};
-function save(){try{localStorage.setItem('hc-sim',JSON.stringify({...V,_v:'2.0'}));}catch(e){}}
+function save(){try{localStorage.setItem('hc-sim',JSON.stringify({...V,_v:'2.1'}));}catch(e){}}
 
 /* ---------- time ---------- */
 let live=true, manualIdx=0, ff=0;

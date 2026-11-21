@@ -26,7 +26,7 @@ C = 225                         # centre of the 450 x 450 face
 R = 211                         # era ring radius
 NOWA = (20 + 26 / 60) * 15      # "now" (2026) on the ring, degrees
 FRIEZE_R, FRIEZE_W = 186, 14    # frieze outer radius and width
-CLEAR = 6                       # clearance inside the frieze
+CLEAR = 3                       # clearance inside the frieze (6 until v0.5)
 
 # minute of the day = the year's index on the clock (0..1439)
 I = '([HOUR_0_23]*60+[MINUTE])'
@@ -195,7 +195,7 @@ def era_ring():
                  f'<Stroke color="#ffffff" thickness="3" cap="ROUND"{dash}/></Arc></PartDraw>')
         # the current era: same see-through white, wider and stronger
         s.append(f'<PartDraw x="0" y="0" width="450" height="450" alpha="0">'
-                 f'<Transform target="alpha" value="({on}?122:0)"/>'
+                 f'<Transform target="alpha" value="({on}?80:0)"/>'   # 0.31: on the watch 0.48 read too white
                  f'<Variant mode="AMBIENT" target="alpha" value="0"/>'
                  f'<Arc centerX="{C}" centerY="{C}" width="{2 * R}" height="{2 * R}" startAngle="{a1 + g:.2f}" endAngle="{a2 - g:.2f}">'
                  f'<Stroke color="#ffffff" thickness="4.5" cap="ROUND"{dash}/></Arc></PartDraw>')
@@ -251,7 +251,7 @@ def year():
 </Group>'''
 
 
-EVENT_SIZE, MAX_LINES = 24, 3     # 24 px since v0.5 (20 in v0.3, 22 in v0.4): legibility on the wrist
+EVENT_SIZE, MAX_LINES = 26, 3     # 26 px since v0.6 (20 in v0.3, 22 in v0.4, 24 in v0.5): legibility on the wrist
 LH = EVENT_SIZE * 1.3
 TEXT_CENTRE = 266                 # middle of the space between the year (bottom ~188) and the pill (top ~341)
 EVENT_TOP = TEXT_CENTRE - MAX_LINES * LH / 2
@@ -355,7 +355,7 @@ def pill():
 </Group>'''
 
 
-VERSION = '0.5'
+VERSION = '0.6'
 
 
 def build_tag():
