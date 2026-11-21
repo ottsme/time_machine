@@ -19,7 +19,6 @@ Live: https://ottsme.github.io/time_machine/clock/
 
 The texts, the Excel and the watch face build live in the private repository `ottsme/history_clock_data`.
 
-    python3 -I tools/xlsx_to_data.py History_Clock_4_Claude.xlsx > data.js
 
 Future years get a label automatically: SCHEDULED (certain), PERHAPS (guesses, plans, anything marked "(?)"),
 SCI-FI (fiction) or none (anniversaries). Move a year with the OVERRIDE table at the top of the script.
