@@ -61,8 +61,10 @@ switch ($Action) {
         Write-Host "Downloading the latest watch face build..."
         Invoke-WebRequest -Uri $apkUrl -OutFile $apk -UseBasicParsing
         Write-Host "Installing on $dev ..."
-        # run through cmd so adb's error text arrives as plain text (PowerShell 5 garbles native stderr)
-        $out = (cmd /c "`"$adb`" -s $dev install -r `"$apk`" 2>&1" | Out-String)
+        # capture adb's output in files, so its error text arrives as plain text (PowerShell 5 garbles native stderr)
+        $o = Join-Path $env:TEMP "hc-adb-out.txt"; $e = Join-Path $env:TEMP "hc-adb-err.txt"
+        Start-Process -FilePath $adb -ArgumentList @("-s", $dev, "install", "-r", "`"$apk`"") -NoNewWindow -Wait -RedirectStandardOutput $o -RedirectStandardError $e
+        $out = (Get-Content $o -Raw) + (Get-Content $e -Raw)
         Write-Host $out
         if ($out -match "UPDATE_INCOMPATIBLE|signatures do not match") {
             # an older build signed with a different key: remove it once, then install fresh
