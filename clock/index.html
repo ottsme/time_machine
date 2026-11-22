@@ -152,7 +152,7 @@ body.sheet #sheet{transform:none}
  <div class="pane" id="p-layout"><div id="layoutCtl"></div>
   <div class="row"><button class="btn" id="reset">Reset all</button><button class="btn" id="copy">Copy values</button></div>
   <textarea id="out" readonly aria-label="Current values"></textarea>
-  <p class="hint">History Clock simulator v2.4. Values are kept on this phone.</p>
+  <p class="hint">History Clock simulator v2.5. Values are kept on this phone.</p>
  </div>
  <div class="pane" id="p-review">
   <h3>This year</h3>
@@ -185,7 +185,7 @@ const DEF={
  accent:'#c9372c', aod:false, bg:true, glow1:0.6, glow2:0.4, grain:0.10, grainScale:0.8, pattern:0.95, fadeMin:10,
  yearFont:'Cormorant Garamond', labelFont:'serif', tick:'none', adPos:'baseline', guides:false, secGlow:true, glowStr:0.7, glowTail:170, eraLabels:true, overflow:true, placeholders:true,
  trueSize:false, mm:38, pxmm:5.4, fit:0.92,
- yearSize:112, yearY:146, eventY:211, eventSize:28, eventW:340, maxLines:3, statusGap:20,
+ yearSize:112, yearY:146, eventY:211, eventSize:28, eventW:340, maxLines:3, statusGap:20, shift3:6, labelTuck:6,
  friezeR:186, friezeW:14, textGap:3,
  comps:'pill', pillW:132, pillH:46, pillLift:2, compR:136, compD:66, compGap:60,
  // colours: '' = automatic (follows the era colour drift), otherwise a fixed colour
@@ -453,7 +453,7 @@ function draw(){
  e.classList.toggle('ph',ev.ph);e.classList.toggle('over',L.over);
  // status (future only), just above the first line
  const st=$('status');st.className=V.labelFont;st.textContent=ev.s||'';st.style.color=cc('c_status',soft);st.style.opacity=V.o_status;
- st.style.top=(L.top-V.statusGap)+'px';
+ st.style.top=(L.top-V.statusGap+(L.lines.length!==2?V.labelTuck:0))+'px'; // watch face v0.15: one and three lines sit lower, their label closer
  // complications or sponsor
  const sp=$('sponsor'),special=i===0;
  const pb=pillBox();
@@ -495,7 +495,7 @@ function textW(t){measureCtx.font=`500 ${V.eventSize}px Inter, sans-serif`;retur
 function layoutText(t){
  const lh=V.eventSize*1.3,maxL=V.maxLines,blockTop=V.eventY;
  const words=t?t.split(/ +/).filter(Boolean):[];
- const linesFor=k=>{const off=(maxL-k)*lh/2,a=[];for(let j=0;j<k;j++){const y=blockTop+off+j*lh;a.push({y,w:chordAt(y,y+lh)});}return a;};
+ const linesFor=k=>{const off=(maxL-k)*lh/2+(maxL===3&&(k===1||k===3)?V.shift3:0),a=[];for(let j=0;j<k;j++){const y=blockTop+off+j*lh;a.push({y,w:chordAt(y,y+lh)});}return a;};
  const sp=textW(' ');const ww=words.map(textW);
  const width=(i,j)=>{let s=0;for(let n=i;n<j;n++)s+=ww[n];return s+sp*Math.max(0,j-i-1);};
  if(!words.length)return {lines:[],over:false,top:blockTop+(maxL-1)*lh/2,lh};
@@ -572,7 +572,7 @@ const LAYOUT=[
  ['h','Year'],['yearSize','Year size','range',70,150,1],['yearY','Year position','range',90,220,1],
  ['h','Outlines'],['guides','Show outlines of all elements','bool'],
  ['h','Frieze'],['friezeR','Frieze outer edge (radius)','range',150,196,1],['friezeW','Frieze width','range',6,28,1],['textGap','Clearance inside the frieze','range',0,20,1],
- ['h','Event text'],['eventY','Text block position (top of line 1)','range',180,300,1],['eventSize','Event text size','range',14,26,.5],['maxLines','Lines at most','range',1,3,1],['eventW','Line width limit (the frieze caps it too)','range',240,400,2],['statusGap','Future label above text','range',12,40,1],
+ ['h','Event text'],['eventY','Text block position (top of line 1)','range',180,300,1],['eventSize','Event text size','range',14,26,.5],['maxLines','Lines at most','range',1,3,1],['shift3','One and three lines: move down','range',0,20,1],['labelTuck','… and their label: move down','range',0,12,1],['eventW','Line width limit (the frieze caps it too)','range',240,400,2],['statusGap','Future label above text','range',12,40,1],
  ['h','Complications'],['comps','Style','sel',['pill','arc']],['pillW','Pill width','range',70,160,1],['pillH','Pill height','range',24,50,1],['pillLift','Pill lift from the clearance line','range',0,40,1],
  ['h','Two circles (arc style)'],['compR','Distance from centre','range',100,180,1],['compD','Circle size','range',48,90,1],['compGap','Spread (degrees)','range',40,180,2]
 ];
