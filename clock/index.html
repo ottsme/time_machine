@@ -152,7 +152,7 @@ body.sheet #sheet{transform:none}
  <div class="pane" id="p-layout"><div id="layoutCtl"></div>
   <div class="row"><button class="btn" id="reset">Reset all</button><button class="btn" id="copy">Copy values</button></div>
   <textarea id="out" readonly aria-label="Current values"></textarea>
-  <p class="hint">History Clock simulator v2.3. Values are kept on this phone.</p>
+  <p class="hint">History Clock simulator v2.4. Values are kept on this phone.</p>
  </div>
  <div class="pane" id="p-review">
   <h3>This year</h3>
@@ -191,7 +191,7 @@ const DEF={
  // colours: '' = automatic (follows the era colour drift), otherwise a fixed colour
  c_year:'', c_ad:'', c_event:'', c_status:'', c_bandOn:'', c_bandOff:'#ffffff', c_labOn:'', c_labOff:'#ffffff', c_now:'#ffffff', c_marker:'#f4ead8', markerFill:'#9b111e',
  c_compText:'', c_compBorder:'#ffffff', c_compFill:'#000000',
- o_ad:.45, o_event:1, o_status:.8, o_bandOff:.22, o_bandOn:.22, w_bandOn:3, o_labOff:.38, o_now:.75, o_compBorder:.16, o_compFill:.32
+ o_ad:.45, o_event:1, o_status:.8, o_bandOff:.22, o_bandOn:.22, w_bandOn:3, o_labOff:.38, labHi:false, o_now:.75, o_compBorder:.16, o_compFill:.32
 };
 let V={...DEF};
 try{const s=JSON.parse(localStorage.getItem('hc-sim')||'{}');for(const k in s)if(k in DEF)V[k]=s[k];
@@ -402,7 +402,7 @@ function ring(i,ink,aod,lit){ // lit: the period's frieze colour (kept for optio
   s+=`<path d="${arc(a1+g,a2-g,R)}" fill="none" stroke="${on?bOn:bOff}" stroke-opacity="${on?V.o_bandOn:V.o_bandOff}" stroke-width="${on?V.w_bandOn:3}" stroke-linecap="round"${name==='Future'?' stroke-dasharray="2 5"':''}></path>`;}
  if(V.eraLabels)BANDS.forEach(([name,a1,a2],n)=>{const on=name===era,mid=(a1+a2)/2,low=mid>90&&mid<270;
   const d=low?arc(a1+1,a2-1,203,true):arc(a1+1,a2-1,191);
-  s+=`<path id="lab${n}" d="${d}" fill="none"></path><text font-family="Inter,sans-serif" font-size="13" font-weight="600" letter-spacing="2.3" fill="${on?lOn:lOff}" fill-opacity="${on?.95:V.o_labOff}"><textPath href="#lab${n}" startOffset="50%" text-anchor="middle">${name.toUpperCase()}</textPath></text>`;});
+  s+=`<path id="lab${n}" d="${d}" fill="none"></path><text font-family="Inter,sans-serif" font-size="13" font-weight="600" letter-spacing="2.3" fill="${on&&V.labHi?lOn:lOff}" fill-opacity="${on&&V.labHi?.95:V.o_labOff}"><textPath href="#lab${n}" startOffset="50%" text-anchor="middle">${name.toUpperCase()}</textPath></text>`;});
  const [x1,y1]=pt(NOWA,R-9),[x2,y2]=pt(NOWA,R+9);
  s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${V.c_now||ink}" stroke-opacity="${V.o_now}" stroke-width="1.5"></line>`;
  const [mx,my]=pt(i/4,R);
@@ -564,7 +564,7 @@ const COLS=[
  ['h','Text'],['c_event','Event text','col'],['o_event','Event text strength','range',.3,1,.05],['c_status','Scheduled / Perhaps / Sci-fi label','col'],['o_status','Label strength','range',0,1,.05],
  ['h','Era lines'],['c_bandOn','Current era line','col'],['o_bandOn','Current line strength','range',0,1,.02],['w_bandOn','Current line width','range',2,8,.5],['c_bandOff','Other era lines','col'],['o_bandOff','Other lines strength','range',0,1,.02],
  ['c_now','“Now” tick (2026)','col'],['o_now','“Now” tick strength','range',0,1,.05],['markerFill','Marker dot (ruby)','color'],['c_marker','Marker ring','col'],
- ['h','Era names'],['c_labOn','Current era name','col'],['c_labOff','Other era names','col'],['o_labOff','Other names strength','range',0,1,.02],
+ ['h','Era names'],['labHi','Highlight the current era name','bool'],['c_labOn','Current era name','col'],['c_labOff','Other era names','col'],['o_labOff','Other names strength','range',0,1,.02],
  ['h','Complications'],['c_compText','Text and icon','col'],['c_compBorder','Border','col'],['o_compBorder','Border strength','range',0,1,.02],['c_compFill','Fill','col'],['o_compFill','Fill strength','range',0,1,.02]
 ];
 const LAYOUT=[
