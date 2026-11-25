@@ -19,7 +19,10 @@ html,body{margin:0;height:100%;background:#000;color:#e9eef3;font:14px/1.4 Inter
 body.sheet #stage{padding-bottom:58vh;align-items:flex-end}
 #faceBox{position:relative;flex:none}
 #face{position:absolute;left:0;top:0;width:450px;height:450px;transform-origin:0 0;border-radius:50%;overflow:hidden;background:#000;touch-action:pan-y}
-#face>svg{position:absolute;left:0;top:0}
+#face>svg,#face>canvas{position:absolute;left:0;top:0}
+#face>div#glowCv{position:absolute;left:0;top:0;width:450px;height:450px;pointer-events:none;animation:glowSpin 60s linear infinite;will-change:transform}
+#glowIn{position:absolute;inset:0;background-size:100% 100%;animation:glowSpin 60s linear infinite reverse;will-change:transform}
+@keyframes glowSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .comp svg{display:block}
 .lay{position:absolute;left:0;top:0;width:450px;height:450px}
 #yearBox{position:absolute;left:0;width:450px;display:flex;justify-content:center;pointer-events:none}
@@ -48,7 +51,6 @@ body.guides #guides{display:block}
 #sponsor{position:absolute;left:0;width:450px;text-align:center}
 #sponsor small{display:block;font-size:10px;letter-spacing:1.6px;opacity:.6;font-weight:500}
 #sponsor b{display:block;margin-top:3px;font-size:13px;font-weight:600;opacity:.85}
-#secGlow *{stroke-opacity:.9;fill-opacity:.9}
 #flagMark{position:absolute;right:-2px;top:-2px;width:14px;height:14px;border-radius:50%;background:#ff9d2e;border:2px solid #000;display:none}
 #flagMark.on{display:block}
 
@@ -93,8 +95,6 @@ body.sheet #sheet{transform:none}
      <radialGradient id="gBase" cx="50%" cy="45%" r="70%"><stop id="sBase0" offset="0"></stop><stop id="sBase1" offset="1"></stop></radialGradient>
      <radialGradient id="gG1" cx="78%" cy="22%" r="55%"><stop id="sG1a" offset="0"></stop><stop id="sG1b" offset="1" stop-opacity="0"></stop></radialGradient>
      <radialGradient id="gG2" cx="18%" cy="82%" r="48%"><stop id="sG2a" offset="0"></stop><stop id="sG2b" offset="1" stop-opacity="0"></stop></radialGradient>
-     <filter id="glowBlur" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter>
-     <mask id="secMask" maskUnits="userSpaceOnUse" x="0" y="0" width="450" height="450"><g id="secWedge"></g></mask>
      <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="4" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter>
     </defs>
     <g id="bgAll">
@@ -104,9 +104,9 @@ body.sheet #sheet{transform:none}
      <rect id="rGrain" width="450" height="450" filter="url(#grain)" style="mix-blend-mode:overlay"></rect>
      <g id="patA"></g>
      <g id="patB"></g>
-     <g id="secGlow" mask="url(#secMask)"><g filter="url(#glowBlur)"><g id="glowA"></g><g id="glowB"></g></g></g>
     </g>
    </svg>
+   <div id="glowCv" aria-hidden="true"><div id="glowIn"></div></div>
    <svg width="450" height="450" viewBox="0 0 450 450" aria-hidden="true" id="ringSvg"></svg>
    <div class="lay" id="txt">
     <div id="yearBox"><div id="year"></div></div>
@@ -152,7 +152,7 @@ body.sheet #sheet{transform:none}
  <div class="pane" id="p-layout"><div id="layoutCtl"></div>
   <div class="row"><button class="btn" id="reset">Reset all</button><button class="btn" id="copy">Copy values</button></div>
   <textarea id="out" readonly aria-label="Current values"></textarea>
-  <p class="hint">History Clock simulator v2.7. Values are kept on this phone.</p>
+  <p class="hint">History Clock simulator v2.8. Values are kept on this phone.</p>
  </div>
  <div class="pane" id="p-review">
   <h3>This year</h3>
@@ -208,7 +208,7 @@ try{const s=JSON.parse(localStorage.getItem('hc-sim')||'{}');for(const k in s)if
  if(s._v&&s._v<'2.6')Object.assign(V,{glowStr:DEF.glowStr}); // v2.6: softer, golden seconds glow
  if(s._v&&s._v<'1.5')Object.assign(V,{tick:'none',comps:'pill',yearY:DEF.yearY,eventY:DEF.eventY,eventW:DEF.eventW,statusGap:DEF.statusGap});}catch(e){}
 const rgba=(h,o)=>{const [r,g,b]=hex(h);return `rgba(${r},${g},${b},${o})`;};
-function save(){try{localStorage.setItem('hc-sim',JSON.stringify({...V,_v:'2.7'}));}catch(e){}}
+function save(){try{localStorage.setItem('hc-sim',JSON.stringify({...V,_v:'2.8'}));}catch(e){}}
 
 /* ---------- time ---------- */
 let live=true, manualIdx=0, ff=0;
@@ -375,26 +375,46 @@ function patterns(i,col){
  const cur=PERIODS[p][1],next=PERIODS[p+1];
  let t=0;if(next&&V.fadeMin>0){const left=next[0]-i;if(left<=V.fadeMin)t=1-left/(V.fadeMin+1);}
  const ka=cur+'|'+V.friezeR+'|'+V.friezeW,nk=next?next[1]:null,kb=nk?nk+'|'+V.friezeR+'|'+V.friezeW:null;
- if(patAk!==ka){const P=patOf(cur);$('patA').innerHTML=P.field+P.ring;$('glowA').innerHTML=P.ring;patAk=ka;}
- if(patBk!==kb){const P=nk?patOf(nk):{field:'',ring:''};$('patB').innerHTML=P.field+P.ring;$('glowB').innerHTML=P.ring;patBk=kb;}
+ if(patAk!==ka){const P=patOf(cur);$('patA').innerHTML=P.field+P.ring;glowSrc.a=P.ring;patAk=ka;}
+ if(patBk!==kb){const P=nk?patOf(nk):{field:'',ring:''};$('patB').innerHTML=P.field+P.ring;glowSrc.b=P.ring;patBk=kb;}
  $('patA').style.opacity=(1-t)*V.pattern;$('patB').style.opacity=t*V.pattern;
  $('patA').style.color=col;$('patB').style.color=col;
  const gc=mixHex(col,V.glowGold,V.glowMix); // v2.6: golden, not white (was 55% white)
- $('glowA').style.opacity=1-t;$('glowB').style.opacity=t;$('glowA').style.color=gc;$('glowB').style.color=gc;
+ glowSrc.t=t;glowSrc.gc=gc;
 }
 
-/* ---------- the seconds glow: a soft light that travels once round the frieze every minute ---------- */
-let wedgeTail=null;
+/* ---------- the seconds glow: a soft light that travels once round the frieze every minute ----------
+   Drawn on its own layer so the background SVG (grain, gradients, patterns) is not repainted every frame.
+   The blurred frieze is rasterised to an image at most once a minute; the fading tail is a CSS conic-gradient mask.
+   The turning is a CSS animation, which the browser compositor runs without any script work per frame. */
+const glowSrc={a:'',b:'',t:0,gc:'#fff'};
+let glowRes=450,glowKey=null,glowGen=0,wedgeKey=null,glowUrl=null,syncedAt=-1; // the spin is re-aligned with the clock every minute
+function glowOn(){return V.secGlow&&!V.aod&&V.bg;}
+function setGlowRes(px){const r=Math.max(150,Math.min(1600,Math.round(px)));if(r===glowRes)return;glowRes=r;glowKey=null;}
+function buildGlow(){
+ const key=[glowSrc.a,glowSrc.b,glowSrc.t.toFixed(3),glowSrc.gc,glowRes].join('|');
+ if(key===glowKey)return;glowKey=key;const gen=++glowGen;
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${glowRes}" height="${glowRes}" viewBox="0 0 450 450"><style>*{stroke-opacity:.9;fill-opacity:.9}</style>`+
+  `<defs><filter id="b" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur><feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge></filter></defs>`+
+  `<g filter="url(#b)"><g style="color:${glowSrc.gc}" opacity="${(1-glowSrc.t).toFixed(3)}">${glowSrc.a}</g><g style="color:${glowSrc.gc}" opacity="${glowSrc.t.toFixed(3)}">${glowSrc.b}</g></g></svg>`;
+ const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})),img=new Image();
+ img.onload=()=>{if(gen!==glowGen){URL.revokeObjectURL(url);return;}
+  const c=document.createElement('canvas');c.width=c.height=glowRes;c.getContext('2d').drawImage(img,0,0,glowRes,glowRes);URL.revokeObjectURL(url);
+  c.toBlob(bl=>{if(gen!==glowGen)return;const u=URL.createObjectURL(bl);$('glowIn').style.backgroundImage=`url(${u})`;if(glowUrl)setTimeout(((o)=>()=>URL.revokeObjectURL(o))(glowUrl),2000);glowUrl=u;});};
+ img.src=url;}
+function buildWedge(){ // conic gradient matching the 30 fading wedges
+ if(wedgeKey===V.glowTail)return;wedgeKey=V.glowTail;const N=30,st=V.glowTail/N;let stops=[];
+ // head at 0deg, tail runs anticlockwise: in conic terms from 360-tail to 360
+ for(let k=N-1;k>=0;k--){const al=Math.pow(1-k/N,1.7);stops.push(`rgba(0,0,0,${al.toFixed(3)}) ${(360-(k+1)*st).toFixed(2)}deg ${(360-k*st).toFixed(2)}deg`);}
+ const g=`conic-gradient(transparent 0deg ${(360-V.glowTail).toFixed(2)}deg, ${stops.join(',')})`;
+ const el=$('glowCv');el.style.webkitMaskImage=el.style.maskImage=g;}
+function syncGlow(){ // start the CSS spin where the second hand is
+ const d=new Date(),sec=d.getSeconds()+d.getMilliseconds()/1000;
+ for(const el of [$('glowCv'),$('glowIn')]){el.style.animation='none';void el.offsetWidth;el.style.animation='';el.style.animationDelay=`-${sec.toFixed(3)}s`;}}
 function secondsGlow(){
- const on=V.secGlow&&!V.aod&&V.bg;$('secGlow').style.display=on?'':'none';if(!on)return;
- if(wedgeTail!==V.glowTail){ // the tail: thin wedges fading behind the head
-  const N=30,st=V.glowTail/N;let s='';
-  for(let k=0;k<N;k++){const a2=-k*st+.4,a1=-(k+1)*st,[x1,y1]=pt(a1,240),[x2,y2]=pt(a2,240);
-   s+=`<path d="M225 225L${f1(x1)} ${f1(y1)}A240 240 0 0 1 ${f1(x2)} ${f1(y2)}Z" fill="#fff" fill-opacity="${Math.pow(1-k/N,1.7).toFixed(3)}"></path>`;}
-  $('secWedge').innerHTML=s;wedgeTail=V.glowTail;}
- const d=new Date(),a=(d.getSeconds()+d.getMilliseconds()/1000)*6;
- $('secWedge').setAttribute('transform',`rotate(${a.toFixed(2)} 225 225)`);
- $('secGlow').style.opacity=V.glowStr;
+ const on=glowOn(),cv=$('glowCv');const was=cv.style.display!=='none';cv.style.display=on?'':'none';if(!on){syncedAt=-1;return;}
+ buildWedge();buildGlow();cv.style.opacity=V.glowStr;
+ const m=Math.floor(Date.now()/60000);if(!was||syncedAt!==m){syncGlow();syncedAt=m;}
 }
 
 /* ---------- ring: era bands, labels, now tick, marker ---------- */
@@ -547,7 +567,7 @@ function size(){
  const sheet=document.body.classList.contains('sheet');
  const vw=innerWidth,vh=innerHeight*(sheet?0.42:1);
  let d=V.trueSize?V.mm*V.pxmm:Math.min(vw,vh)*V.fit;
- const s=d/450;$('face').style.transform=`scale(${s})`;
+ const s=d/450;$('face').style.transform=`scale(${s})`;setGlowRes(d*(devicePixelRatio||1));
  $('faceBox').style.width=d+'px';$('faceBox').style.height=d+'px';
  $('stage').style.paddingBottom=sheet?(innerHeight*0.56+(innerHeight*0.44-d)/2)+'px':'';
 }
@@ -599,7 +619,7 @@ function build(list,host){
   if(type==='sel'){const s=document.createElement('select');a.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;s.appendChild(op);});s.value=V[k];s.onchange=()=>{V[k]=s.value;apply();};host.appendChild(s);}
  }
 }
-function apply(){document.body.classList.toggle('ovl',V.overflow);document.body.classList.toggle('guides',V.guides);save();size();draw();}
+function apply(){document.body.classList.toggle('ovl',V.overflow);document.body.classList.toggle('guides',V.guides);save();size();draw();kick();}
 function buildAll(){build(LOOK,$('lookCtl'));build(COLS,$('colCtl'));build(LAYOUT,$('layoutCtl'));}
 buildAll();
 $('reset').onclick=()=>{V={...DEF};try{localStorage.removeItem('hc-sim');}catch(e){}buildAll();apply();};
@@ -615,7 +635,7 @@ $('mBack').onclick=()=>setManual(curIdx()-1);
 $('mFwd').onclick=()=>setManual(curIdx()+1);
 $('jumpGo').onclick=()=>{const y=parseInt($('jump').value,10);
  if(isNaN(y)||y<0||y>2359||y%100>59){$('jump').value='';$('jump').placeholder='0–2359, ending 00–59';return;}setManual(idxOfYear(y));};
-$('ff').onchange=()=>{ff=+$('ff').value;if(ff&&live){manualIdx=nowIdx();live=false;$('live').checked=false;}};
+$('ff').onchange=()=>{ff=+$('ff').value;if(ff&&live){manualIdx=nowIdx();live=false;$('live').checked=false;}kick();};
 let sx=null;
 $('face').addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
 $('face').addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx;sx=null;if(Math.abs(dx)>40)setManual(curIdx()+(dx<0?1:-1));});
@@ -678,16 +698,27 @@ $('flagFile').onchange=async()=>{const f=$('flagFile').files[0];if(!f)return;
  catch(e){$('flagMsg').textContent='That file could not be read as History Clock notes.';}
  $('flagFile').value='';};
 
-/* ---------- tick ---------- */
-let acc=0,lastT=performance.now(),lastDrawn=-1;
-function loop(t){
- const dt=(t-lastT)/1000;lastT=t;
+/* ---------- tick ----------
+   About 30 frames a second during fast-forward; otherwise once a second (the seconds glow turns by CSS),
+   just after the second turns. Nothing runs while the page is hidden (minimised, covered, another tab). */
+let acc=0,lastT=performance.now(),lastDrawn=-1,timer=0,raf=0,lastFrame=0;
+const FRAME=1000/30;
+function tick(t){
+ timer=raf=0;t=t||performance.now();lastFrame=t;
+ const dt=Math.min((t-lastT)/1000,1);lastT=t; // after a pause, fast-forward resumes rather than leaping ahead
  if(ff&&!live){acc+=dt*ff;if(acc>=1){const n=Math.floor(acc);acc-=n;manualIdx=(manualIdx+n)%1440;}}
  const i=curIdx();if(i!==lastDrawn){lastDrawn=i;draw();if(!ff)saveTime();}
  secondsGlow();
- requestAnimationFrame(loop);
+ schedule();
 }
-apply();requestAnimationFrame(loop);
+function schedule(){
+ if(timer||raf||document.hidden)return;
+ if(ff&&!live)timer=setTimeout(()=>{timer=0;raf=requestAnimationFrame(tick);},Math.max(0,lastFrame+FRAME-performance.now()-8));
+ else timer=setTimeout(tick,1000-Date.now()%1000+15);
+}
+function kick(){clearTimeout(timer);cancelAnimationFrame(raf);timer=raf=0;if(!document.hidden)raf=requestAnimationFrame(tick);}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(timer);cancelAnimationFrame(raf);timer=raf=0;}else{syncedAt=-1;kick();}});
+apply();
 if(document.fonts)document.fonts.ready.then(draw);
 </script>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));</script>
