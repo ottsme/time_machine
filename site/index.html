@@ -55,6 +55,8 @@ body.notunnel .ring{display:none}
 .winN{display:block;height:1.1em;overflow:hidden;color:var(--var);border-bottom:3px solid var(--accent);padding-bottom:4px;box-sizing:content-box}
 .stack{display:flex;flex-direction:column}
 .stack span{display:block;height:1.1em;line-height:1.1em;white-space:nowrap}
+h1.fade .stack{position:relative;height:1.1em}
+h1.fade .stack span{position:absolute;left:0;right:0;top:0;opacity:0}
 .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .sub{margin:0;font-size:20px;line-height:1.5;color:var(--soft);max-width:640px}
 .sagan{margin:0;font-family:'Space Grotesk',sans-serif;font-size:18px;line-height:1.4;color:var(--faint);max-width:640px}
@@ -63,7 +65,7 @@ body.notunnel .ring{display:none}
 .pill svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .stores{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:8px}
 .note{margin:0;font-size:13px;color:var(--faint)}
-@media (prefers-reduced-motion:reduce){.ring{animation:none;opacity:.25}.stack{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.ring{animation:none;opacity:.25}}
 
 /* steps */
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
@@ -117,6 +119,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;
 .panel label span{float:right;font-family:'JetBrains Mono',monospace;color:#fff}
 .panel label.tg{display:flex;align-items:center;justify-content:space-between}
 .panel input[type=range]{width:100%;accent-color:#c41a1a;margin:0}
+.panel select{width:100%;height:32px;background:#12151a;color:#fff;border:1px solid #333a43;border-radius:8px;padding:0 8px;font:inherit}
 .panel input[type=color]{width:40px;height:26px;background:#12151a;border:1px solid #333a43;border-radius:6px;padding:1px}
 .panel label.sw{display:flex;align-items:center;justify-content:space-between}
 .panel input[type=checkbox]{width:18px;height:18px;accent-color:#c41a1a}
@@ -244,7 +247,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;
 
 <button id="gear" aria-label="Tuning" aria-controls="tune" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
 <aside class="panel" id="tune" aria-label="Tuning">
- <h2>Tuning <em>site v0.1</em></h2>
+ <h2>Tuning <em>site v0.2</em></h2>
  <p class="hint">Values are kept on this device. "Copy values" gives all numbers for implementation.</p>
  <div id="ctl"></div>
  <div class="tb"><button id="replay">Restart roll</button></div>
@@ -267,6 +270,7 @@ const C=[
  {k:'walk',l:'Road / walk swap',t:'toggle',d:true},
  {k:'varColor',l:'Variable colour',t:'color',d:'#F0C27B'},
  {k:'underline',l:'Red line under the number',t:'toggle',d:true},
+ {k:'motion',l:'Change style',t:'select',o:[['auto','Auto: slide, or fade if motion is off'],['slide','Always slide'],['fade','Always fade']],d:'auto'},
  {k:'h1',l:'Headline size (max)',t:'range',min:48,max:120,step:2,d:84,u:' px'},
  {s:'Page'},
  {k:'accent',l:'Signature colour',t:'color',d:'#9e0303'},
@@ -285,6 +289,7 @@ function build(){const host=$('ctl');for(const c of C){
  const lab=document.createElement('label');lab.htmlFor='c_'+c.k;lab.textContent=c.l;let inp=document.createElement('input');inp.id='c_'+c.k;
  if(c.t==='toggle'){lab.className='tg';inp.type='checkbox';lab.appendChild(inp);host.appendChild(lab);inp.addEventListener('change',()=>{V[c.k]=inp.checked;apply(true);});continue;}
  if(c.t==='color'){lab.className='sw';inp.type='color';lab.appendChild(inp);host.appendChild(lab);inp.addEventListener('input',()=>{V[c.k]=inp.value;apply(true);});continue;}
+ if(c.t==='select'){inp=document.createElement('select');inp.id='c_'+c.k;for(const [v,t] of c.o){const o=document.createElement('option');o.value=v;o.textContent=t;inp.appendChild(o);}inp.addEventListener('change',()=>{V[c.k]=inp.value;apply(true);});host.appendChild(lab);host.appendChild(inp);continue;}
  const sp=document.createElement('span');sp.id='v_'+c.k;lab.appendChild(sp);inp.type='range';inp.min=c.min;inp.max=c.max;inp.step=c.step;
  inp.addEventListener('input',()=>{V[c.k]=+inp.value;apply(true);});host.appendChild(lab);host.appendChild(inp);}}
 
@@ -304,6 +309,24 @@ function buildRoll(){
  const T=holds.reduce((a,b)=>a+b,0)+k*V.move;
  const ease=`cubic-bezier(.34,${(1+.56*V.bounce).toFixed(2)},.64,1)`;
  const p=t=>(t/T*100).toFixed(3)+'%';
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const fade=V.motion==='fade'||(V.motion==='auto'&&reduced);
+ document.querySelector('.hero h1').classList.toggle('fade',fade);
+ if(fade){
+  // crossfade: nothing moves, the old item fades out while the new one fades in, on the same rhythm
+  const tr=[];let tt=0;for(let i=0;i<k;i++){tt+=holds[i];tr.push([tt,tt+V.move]);tt+=V.move;}
+  const wt=m>1?[tr[2],tr[5]]:[];
+  const frames=(name,n,trs)=>{let css='';for(let j=0;j<n;j++){
+    const out=trs[j],inn=trs[(j-1+n)%n];
+    css+=j===0?`@keyframes ${name}${j}{0%{opacity:1}${p(out[0])}{opacity:1}${p(out[1])}{opacity:0}${p(inn[0])}{opacity:0}100%{opacity:1}}`
+              :`@keyframes ${name}${j}{0%{opacity:0}${p(inn[0])}{opacity:0}${p(inn[1])}{opacity:1}${p(out[0])}{opacity:1}${p(out[1])}{opacity:0}100%{opacity:0}}`;
+    css+=`#${name==='fN'?'stN':'stW'} span:nth-child(${j+1}){animation:${name}${j} ${T.toFixed(3)}s ease-in-out infinite}`;}
+   return css;};
+  $('stN').innerHTML=S.map(x=>`<span>${x.n}</span>`).join('');
+  $('stW').innerHTML=words.map(w=>`<span>${w}</span>`).join('');
+  $('dyn').textContent=frames('fN',k,tr)+(m>1?frames('fW',m,wt):'#stW span{opacity:1}');
+  return T;
+ }
  const yN=i=>-(k-i)*h, yW=j=>-(m-j)*h;
  let kn=`0%{transform:translateY(${yN(0)}em)}`,kw=`0%{transform:translateY(${yW(0)}em)}`,t=0;
  for(let i=0;i<k;i++){
@@ -328,9 +351,10 @@ function apply(save){
 }
 
 build();apply(false);
-$('replay').onclick=()=>{for(const id of ['stN','stW']){const el=$(id);el.style.animation='none';void el.offsetWidth;el.style.animation='';}};
+$('replay').onclick=()=>{buildRoll();for(const id of ['stN','stW']){const el=$(id);el.style.animation='none';void el.offsetWidth;el.style.animation='';}};
+matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',()=>buildRoll());
 $('reset').onclick=()=>{V={...DEF};try{localStorage.removeItem('tm-site');}catch(e){}apply(false);};
-$('copy').onclick=()=>{const T=buildRoll();const t=JSON.stringify({version:'site v0.1',...V,loopSeconds:+T.toFixed(2)},null,1);$('out').style.display='block';$('out').value=t;
+$('copy').onclick=()=>{const T=buildRoll();const t=JSON.stringify({version:'site v0.2',...V,loopSeconds:+T.toFixed(2)},null,1);$('out').style.display='block';$('out').value=t;
  try{navigator.clipboard.writeText(t);$('copy').textContent='Copied';setTimeout(()=>$('copy').textContent='Copy values',1500);}catch(e){}};
 
 /* panel: open by default on a large screen, closed on a phone; the button toggles it */
